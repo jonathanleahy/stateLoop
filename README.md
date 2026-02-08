@@ -4,32 +4,25 @@ A multi-agent negotiation system where AI agents discuss options and reach conse
 
 Built with TypeScript, Express, SQLite, and the Anthropic Claude SDK.
 
-## Screenshots
+![Thronglets negotiating with speech and thought bubbles](screenshots/thronglets-negotiation.png)
 
-### Negotiation Map
-The main interface shows an interactive 2D/isometric map where agents negotiate in real-time. Select a case, watch agents discuss, and send messages to guide the conversation.
+Three Thronglet agents in a workplace mediation — Sarah (mediator) speaks while her private thoughts appear below. Alex and Jordan wait with their own hidden agendas. The right panel tracks case status, options, and participants.
 
-![Main UI - Negotiation Map](screenshots/main-ui.png)
+## Quick Start
 
-### Workflow Designer
-Chain multiple scenarios together into multi-stage workflows. Drag scenarios from the sidebar, connect them, and run complex negotiation pipelines.
+```bash
+npm install
+npm run dev
+```
 
-![Workflow Designer](screenshots/workflows.png)
+Open http://localhost:3000
 
-### Company Management
-Create persistent organizations with buildings, rooms, departments, employees, and HR policies. Scenarios can reference company context for realistic workplace simulations.
-
-![Company Management](screenshots/companies.png)
-
-### API Documentation
-Full interactive Swagger UI with every endpoint documented. Test API calls directly from the browser.
-
-![API Documentation](screenshots/api-docs.png)
-
-### Scenario Browser
-Browse 35+ pre-made scenarios, customize agent appearances, manage furniture and locations.
-
-![Scenario Browser](screenshots/scenarios.png)
+| URL | What you'll find |
+|-----|-----------------|
+| `/` | Main negotiation UI with Thronglet map |
+| `/scenarios.html` | Browse scenarios, furniture, locations, companies, agents |
+| `/workflows.html` | Workflow designer for multi-stage pipelines |
+| `/api-docs` | Interactive Swagger API documentation |
 
 ## Features
 
@@ -39,38 +32,46 @@ Browse 35+ pre-made scenarios, customize agent appearances, manage furniture and
 - **Collaborative document editing** — Agents co-write scripts, proposals, and notes in real-time
 - **Automatic resolution detection** — Cases resolve on consensus, fail on timeout or repeated rejections
 - **35+ built-in scenarios** — From workplace mediation to comedy script writing to jury deliberation
-- **Visual UI** — 2D/isometric map with animated agents, text-to-speech, conversation replay
+- **Visual UI** — 2D/isometric map with animated Thronglet agents, text-to-speech, conversation replay
 - **Workflow designer** — Chain scenarios into multi-stage pipelines
 - **Company management** — Persistent organizations with buildings, rooms, policies, and employees
 - **Forms & mediation agreements** — Generate formal documentation on case resolution
 - **Full REST API** — Every feature accessible via API with Swagger documentation
 - **Built-in simulation** — Run negotiations to completion automatically with Claude AI
 
-## Quick Start
+## Scenario Browser
 
-```bash
-npm install
-npm run build
-npm start
-```
+Browse 35+ pre-made scenarios covering workplace disputes, creative collaborations, civic debates, and more.
 
-Open http://localhost:3000
+![35+ pre-made scenarios](screenshots/scenarios-populated.png)
 
-For development with hot reload:
-```bash
-npm run dev
-```
+- **Workplace** — mediation, feature planning, code review, union negotiation
+- **Creative** — Fawlty Towers script writing, art commission, game design pitch, podcast planning
+- **Civic** — city council zoning, climate debate, jury deliberation, school policy
+- **Personal** — wedding planning, flatmate interview, family inheritance
+- **Healthcare** — hospital hydration policy, AI ethics board
 
-### URLs
+## Locations & Furniture
 
-| URL | Description |
-|-----|-------------|
-| `/` | Main negotiation UI |
-| `/scenarios.html` | Scenario browser & agent customizer |
-| `/companies.html` | Organization management |
-| `/workflows.html` | Workflow designer |
-| `/api-docs` | Interactive API documentation (Swagger) |
-| `/docs` | Markdown documentation viewer |
+Six environments — Hospital, Library, Office, School, Cafe, Park — each with matching furniture that automatically populates the negotiation map.
+
+![Location showroom](screenshots/locations.png)
+
+Furniture renders in both 2D and isometric 3D:
+
+![Furniture in 3D](screenshots/furniture-3d.png)
+
+## Agent Customizer
+
+Design Thronglet appearances with control over body type, skin tone, hair, clothing, accessories, professional roles, and mobility aids. Live preview updates instantly.
+
+![Agent customizer](screenshots/agents.png)
+
+## Workflow Designer
+
+Chain scenarios into multi-stage pipelines. Output from one stage feeds into the next.
+
+![Workflow designer](screenshots/workflows.png)
 
 ## How It Works
 
@@ -88,7 +89,7 @@ Each agent is **stateless** — they receive the entire conversation context on 
 
 ## Writing Scenarios
 
-Scenarios are plain text files that define agents, options, rules, and context:
+Scenarios are plain text files:
 
 ```
 SCENARIO: Team Dinner Choice
@@ -122,24 +123,13 @@ MAX_ROUNDS: 10
 | `document` | Collaborative writing | Script writing, proposal drafting |
 | `both` | Options + document output | Design pitch with mockup |
 
-### Built-in Scenarios
-
-The `scenarios/` folder includes 35+ ready-to-use scenarios:
-
-- **Workplace** — mediation, feature planning, code review
-- **Creative** — Fawlty Towers script writing, art commission, game design pitch
-- **Civic** — city council zoning, climate debate, jury deliberation
-- **Personal** — wedding planning, flatmate interview, family inheritance
-- **Healthcare** — hospital hydration policy debate
-
 ## API Overview
 
-### Core Flow
 ```bash
-# Create a case from a scenario
+# Create a case
 curl -X POST http://localhost:3000/api/cases -d '{"scenario": "..."}'
 
-# Get the AI setup prompt for the current agent
+# Get the AI prompt for the current agent
 curl http://localhost:3000/api/cases/{id}/auto-play
 
 # Submit agent setup and first message
@@ -152,8 +142,6 @@ curl -X POST http://localhost:3000/api/cases/{id}/submit -d '{"response": {...}}
 curl -X POST http://localhost:3000/api/cases/{id}/run
 ```
 
-### Key Endpoints
-
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/cases` | Create negotiation case |
@@ -163,10 +151,9 @@ curl -X POST http://localhost:3000/api/cases/{id}/run
 | `POST` | `/api/cases/:id/run` | Run to completion |
 | `GET` | `/api/scenarios` | List available scenarios |
 | `POST` | `/api/cases/:id/documents` | Create working document |
-| `PUT` | `/api/cases/:id/documents/:name` | Update document |
 | `GET/POST` | `/api/companies` | Manage organizations |
 
-See the full [API documentation](http://localhost:3000/api-docs) when running locally.
+![API Documentation](screenshots/api-docs.png)
 
 ## Architecture
 
@@ -221,6 +208,7 @@ npm run swagger:generate  # Regenerate API docs
 
 | Document | Purpose |
 |----------|---------|
+| [Getting Started](docs/getting-started.md) | Illustrated guide for new users |
 | [SCENARIO_FORMAT.md](SCENARIO_FORMAT.md) | Full scenario authoring specification |
 | [SPECIFICATION.md](SPECIFICATION.md) | System architecture & API details |
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Development guide |
