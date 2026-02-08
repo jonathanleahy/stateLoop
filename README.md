@@ -155,6 +155,28 @@ curl -X POST http://localhost:3000/api/cases/{id}/run
 
 ![API Documentation](screenshots/api-docs.png)
 
+## Agent-Built Projects
+
+The workflow system — where agents brainstorm, plan, and code together — produced these playable projects:
+
+### Stack Games (`/stack-games.html`)
+Five physics-based stacking games: Balloon Stack, Shape Tower, Balloon Stacker, Hot Air Balloons, and Airplane Hangar.
+
+![Stack Games menu](screenshots/stack-games-menu.png)
+
+### More Creations
+
+| | |
+|---|---|
+| ![Top-Down Racer](screenshots/game-racer.png) | ![Blobform](screenshots/blobform.png) |
+| **Top-Down Racer** — Oval track racing with AI opponents and switchable camera views | **Blobform** — A shape-shifting blob that absorbs objects and morphs between round, spiky, and flat |
+
+![RIPPLE](screenshots/ripple.png)
+
+**RIPPLE** — Wave-survival game. Hold to charge, release to blast. Kill 3+ for slow-mo, close kills drop powerups.
+
+All single HTML files with no dependencies, built entirely through agent collaboration.
+
 ## Architecture
 
 ```

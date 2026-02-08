@@ -277,6 +277,24 @@ The workflow system produced a suite of 5 physics-based stacking games, playable
 
 These exist because we pointed the workflow designer at a game creation pipeline and let the agents loose. They brainstormed concepts, argued about scope, wrote the code, reviewed each other's work, and shipped playable games. Not bad for a negotiation system.
 
+### More Agent-Built Creations
+
+The system also produced these standalone projects earlier in development:
+
+**Top-Down Racer** (`/game-racer.html`) — An oval track racer with AI opponents, lap counting, speed HUD, and a toggleable top-down/chase camera. Four cars line up on the grid and GO.
+
+![Top-Down Racer with four cars on an oval track](images/game-racer.png)
+
+**Blobform** (`/blobform.html`) — A squishy blob with googly eyes that absorbs objects to change shape. WASD to move, click objects to absorb them. The blob morphs between round, spiky, and flat forms depending on what it eats.
+
+![Blobform — a shape-shifting blob with googly eyes](images/blobform.png)
+
+**RIPPLE** (`/ripple.html`) — A wave-survival game. Hold to charge, release to blast. Kill 3+ enemies for slow-mo, close kills drop powerups. Survive the waves, defeat the bosses. Minimal, stylish, and surprisingly tense.
+
+![RIPPLE — wave survival with charge-and-blast mechanic](images/ripple.png)
+
+All single HTML files, no dependencies, built through the agent collaboration system.
+
 ---
 
 ## Where To Go Next
