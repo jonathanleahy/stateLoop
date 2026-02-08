@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StateLoop - Company Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            secondary: '#8b5cf6',
+          }
+        }
+      }
+    }
+  </script>
+  <script>
+    // Load theme from localStorage before page renders
+    (function() {
+      const theme = localStorage.getItem('stateloop-theme') || 'dark';
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    })();
+  </script>
+  <style>
+    .tree-node {
+      transition: max-height 0.3s ease-out;
+      overflow: hidden;
+    }
+    .tree-node.collapsed {
+      max-height: 0;
+    }
+    .tree-node.expanded {
+      max-height: 2000px;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 transition-colors">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">StateLoop</h1>
+            <p class="text-xs text-gray-500 dark:text-slate-400">Stateless Agent Orchestration</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Navigation Links -->
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Home
+        </a>
+        <a href="/scenarios.html" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Scenarios
+        </a>
+        <a href="/workflows.html" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Workflows
+        </a>
+        <span class="text-primary font-medium px-3 py-2 rounded-lg text-sm flex items-center gap-2 bg-primary/10">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+          </svg>
+          Companies
+        </span>
+        <a href="/docs" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Docs
+        </a>
+        <!-- Theme Toggle -->
+        <button id="theme-toggle" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg transition-colors" title="Toggle theme">
+          <svg id="theme-icon-dark" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="theme-icon-light" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl mx-auto p-6">
+    <div class="flex gap-6">
+      <!-- Left Sidebar: Company List -->
+      <div class="w-80 flex-shrink-0">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden transition-colors">
+          <div class="p-4 border-b border-gray-200 dark:border-slate-700">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Companies
+            </h2>
+            <!-- Search -->
+            <div class="relative">
+              <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input type="text" id="search-input" placeholder="Search companies..." class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+            </div>
+          </div>
+
+          <!-- Create Button -->
+          <div class="p-3 border-b border-gray-200 dark:border-slate-700">
+            <button id="create-company-btn" class="w-full bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              New Company
+            </button>
+          </div>
+
+          <!-- Company List -->
+          <div id="company-list" class="max-h-[calc(100vh-320px)] overflow-y-auto">
+            <p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">Loading companies...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Area: Company Details -->
+      <div class="flex-1">
+        <div id="company-details" class="bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden transition-colors min-h-[600px]">
+          <!-- Empty State -->
+          <div id="no-company-selected" class="flex items-center justify-center h-[600px]">
+            <div class="text-center p-8">
+              <div class="w-16 h-16 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Company Selected</h3>
+              <p class="text-gray-500 dark:text-slate-400 mb-6 max-w-sm">Select a company from the list or create a new one to view details.</p>
+            </div>
+          </div>
+
+          <!-- Company Content (hidden initially) -->
+          <div id="company-content" class="hidden">
+            <!-- Company Header -->
+            <div id="company-header" class="p-6 border-b border-gray-200 dark:border-slate-700">
+              <div class="flex items-start justify-between">
+                <div class="flex items-center gap-4">
+                  <div id="company-logo" class="w-12 h-12 rounded-lg flex items-center justify-center text-white text-xl font-bold" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    C
+                  </div>
+                  <div>
+                    <h2 id="company-name" class="text-2xl font-bold text-gray-900 dark:text-white">Company Name</h2>
+                    <p id="company-industry" class="text-gray-500 dark:text-slate-400 text-sm">Industry</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button id="ai-setup-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    AI Setup
+                  </button>
+                  <button id="delete-company-btn" class="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 px-3 py-2 rounded-lg text-sm transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 dark:border-slate-700">
+              <nav class="flex -mb-px">
+                <button data-tab="overview" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 transition-colors border-primary text-primary">Overview</button>
+                <button data-tab="buildings" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300">Buildings</button>
+                <button data-tab="policies" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300">Policies</button>
+                <button data-tab="employees" class="tab-btn px-6 py-3 text-sm font-medium border-b-2 transition-colors border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300">Employees</button>
+              </nav>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6">
+              <!-- Overview Tab -->
+              <div id="tab-overview" class="tab-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">Company Size</h3>
+                    <p id="company-size" class="text-lg font-semibold text-gray-900 dark:text-white">-</p>
+                  </div>
+                  <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">Brand Colors</h3>
+                    <div class="flex items-center gap-2">
+                      <div id="primary-color-swatch" class="w-8 h-8 rounded border border-gray-300 dark:border-slate-600"></div>
+                      <div id="secondary-color-swatch" class="w-8 h-8 rounded border border-gray-300 dark:border-slate-600"></div>
+                    </div>
+                  </div>
+                  <div class="col-span-2 bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">Description</h3>
+                    <p id="company-description" class="text-gray-700 dark:text-slate-300">-</p>
+                  </div>
+                  <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">Total Buildings</h3>
+                    <p id="buildings-count" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                  <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-slate-400 mb-2">Total Employees</h3>
+                    <p id="employees-count" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Buildings Tab -->
+              <div id="tab-buildings" class="tab-content hidden">
+                <div id="buildings-list" class="space-y-4">
+                  <p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No buildings found</p>
+                </div>
+              </div>
+
+              <!-- Policies Tab -->
+              <div id="tab-policies" class="tab-content hidden">
+                <div id="policies-list" class="space-y-4">
+                  <p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No policies found</p>
+                </div>
+              </div>
+
+              <!-- Employees Tab -->
+              <div id="tab-employees" class="tab-content hidden">
+                <div id="employees-list" class="space-y-2">
+                  <p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No employees found</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Company Modal -->
+  <div id="create-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full mx-4 overflow-hidden">
+      <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-900 dark:text-white">Create New Company</h3>
+        <button id="close-create-modal" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Company Name</label>
+        <input type="text" id="new-company-name" placeholder="Enter company name..." class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+      </div>
+      <div class="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
+        <button id="cancel-create" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Cancel</button>
+        <button id="confirm-create" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium transition-colors hover:bg-indigo-600">Create Company</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Setup Modal -->
+  <div id="ai-setup-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+      <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center flex-shrink-0">
+        <h3 class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          AI Setup Prompt
+        </h3>
+        <button id="close-ai-modal" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1">
+        <p class="text-sm text-gray-600 dark:text-slate-400 mb-4">Use this prompt with an AI to generate the company structure:</p>
+        <pre id="ai-prompt-content" class="bg-gray-100 dark:bg-slate-700 rounded-lg p-4 text-sm overflow-x-auto whitespace-pre-wrap font-mono text-gray-800 dark:text-slate-200"></pre>
+      </div>
+      <div class="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3 flex-shrink-0">
+        <button id="copy-prompt" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium transition-colors hover:bg-indigo-600 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy Prompt
+        </button>
+        <button id="close-ai-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl max-w-md w-full mx-4 overflow-hidden">
+      <div class="p-4 border-b border-gray-200 dark:border-slate-700">
+        <h3 class="font-semibold text-gray-900 dark:text-white">Delete Company</h3>
+      </div>
+      <div class="p-4">
+        <p class="text-gray-600 dark:text-slate-400">Are you sure you want to delete <span id="delete-company-name" class="font-semibold text-gray-900 dark:text-white"></span>? This action cannot be undone.</p>
+      </div>
+      <div class="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
+        <button id="cancel-delete" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Cancel</button>
+        <button id="confirm-delete" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium transition-colors hover:bg-red-700">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let companies = [];
+    let selectedCompany = null;
+    let currentTab = 'overview';
+
+    // Theme toggle
+    document.getElementById('theme-toggle').addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('stateloop-theme', isDark ? 'dark' : 'light');
+    });
+
+    // Load companies
+    async function loadCompanies() {
+      try {
+        const res = await fetch('/api/companies');
+        const data = await res.json();
+        companies = data.companies || [];
+        renderCompanyList();
+      } catch (error) {
+        console.error('Failed to load companies:', error);
+        document.getElementById('company-list').innerHTML = '<p class="text-red-500 text-sm text-center py-6">Failed to load companies</p>';
+      }
+    }
+
+    // Render company list
+    function renderCompanyList(filter = '') {
+      const list = document.getElementById('company-list');
+      const filtered = filter
+        ? companies.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()))
+        : companies;
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No companies found</p>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => `
+        <div class="company-item px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors border-b border-gray-100 dark:border-slate-700/50 ${selectedCompany?.id === c.id ? 'bg-primary/10 border-l-4 border-l-primary' : ''}" data-id="${c.id}">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center text-white text-sm font-bold" style="background: ${c.primaryColor || '#6366f1'}">
+              ${c.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 dark:text-white truncate">${c.name}</p>
+              <p class="text-xs text-gray-500 dark:text-slate-400">${c.industry || 'No industry'} ${c.size ? '| ' + c.size : ''}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      list.querySelectorAll('.company-item').forEach(item => {
+        item.addEventListener('click', () => selectCompany(item.dataset.id));
+      });
+    }
+
+    // Select company
+    async function selectCompany(id) {
+      try {
+        const res = await fetch(`/api/companies/${id}`);
+        if (!res.ok) throw new Error('Company not found');
+        selectedCompany = await res.json();
+        renderCompanyDetails();
+        renderCompanyList(document.getElementById('search-input').value);
+      } catch (error) {
+        console.error('Failed to load company:', error);
+      }
+    }
+
+    // Render company details
+    function renderCompanyDetails() {
+      if (!selectedCompany) {
+        document.getElementById('no-company-selected').classList.remove('hidden');
+        document.getElementById('company-content').classList.add('hidden');
+        return;
+      }
+
+      document.getElementById('no-company-selected').classList.add('hidden');
+      document.getElementById('company-content').classList.remove('hidden');
+
+      // Header
+      document.getElementById('company-name').textContent = selectedCompany.name;
+      document.getElementById('company-industry').textContent = selectedCompany.industry || 'No industry specified';
+
+      const logo = document.getElementById('company-logo');
+      logo.textContent = selectedCompany.name.charAt(0).toUpperCase();
+      logo.style.background = `linear-gradient(135deg, ${selectedCompany.primaryColor || '#6366f1'}, ${selectedCompany.secondaryColor || '#8b5cf6'})`;
+
+      // Overview tab
+      document.getElementById('company-size').textContent = selectedCompany.size ? selectedCompany.size.charAt(0).toUpperCase() + selectedCompany.size.slice(1) : 'Not specified';
+      document.getElementById('company-description').textContent = selectedCompany.description || 'No description available';
+      document.getElementById('primary-color-swatch').style.backgroundColor = selectedCompany.primaryColor || '#6366f1';
+      document.getElementById('secondary-color-swatch').style.backgroundColor = selectedCompany.secondaryColor || '#8b5cf6';
+      document.getElementById('buildings-count').textContent = selectedCompany.buildings?.length || 0;
+      document.getElementById('employees-count').textContent = selectedCompany.employees?.length || 0;
+
+      // Buildings tab
+      renderBuildings();
+
+      // Policies tab
+      renderPolicies();
+
+      // Employees tab
+      renderEmployees();
+    }
+
+    // Render buildings tree
+    function renderBuildings() {
+      const container = document.getElementById('buildings-list');
+      const buildings = selectedCompany.buildings || [];
+
+      if (buildings.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No buildings found</p>';
+        return;
+      }
+
+      container.innerHTML = buildings.map(b => `
+        <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg overflow-hidden">
+          <button class="building-toggle w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" data-building="${b.id}">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <div class="text-left">
+                <p class="font-medium text-gray-900 dark:text-white">${b.name}</p>
+                <p class="text-xs text-gray-500 dark:text-slate-400">${b.city || ''}${b.city && b.country ? ', ' : ''}${b.country || ''}</p>
+              </div>
+            </div>
+            <svg class="chevron w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="tree-node collapsed" id="rooms-${b.id}">
+            <div class="px-4 pb-3">
+              ${b.description ? `<p class="text-sm text-gray-600 dark:text-slate-400 mb-3">${b.description}</p>` : ''}
+              ${b.rooms && b.rooms.length > 0 ? `
+                <div class="space-y-2">
+                  ${b.rooms.map(r => `
+                    <div class="bg-white dark:bg-slate-800 rounded p-3 border border-gray-200 dark:border-slate-600">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <span class="text-lg">${getRoomIcon(r.roomType)}</span>
+                          <span class="font-medium text-gray-900 dark:text-white">${r.name}</span>
+                        </div>
+                        <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-gray-600 dark:text-slate-400">${r.roomType}</span>
+                      </div>
+                      ${r.floor ? `<p class="text-xs text-gray-500 dark:text-slate-500 mt-1">Floor ${r.floor}${r.capacity ? ' | Capacity: ' + r.capacity : ''}</p>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : '<p class="text-sm text-gray-500 dark:text-slate-500 italic">No rooms in this building</p>'}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add toggle handlers
+      container.querySelectorAll('.building-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const buildingId = btn.dataset.building;
+          const rooms = document.getElementById(`rooms-${buildingId}`);
+          const chevron = btn.querySelector('.chevron');
+          rooms.classList.toggle('collapsed');
+          rooms.classList.toggle('expanded');
+          chevron.style.transform = rooms.classList.contains('expanded') ? 'rotate(180deg)' : '';
+        });
+      });
+    }
+
+    function getRoomIcon(roomType) {
+      const icons = {
+        'office': '🏢',
+        'meeting_room': '🤝',
+        'break_room': '☕',
+        'studio': '🎬',
+        'reception': '🛎️',
+        'storage': '📦',
+        'lab': '🔬',
+        'other': '🚪'
+      };
+      return icons[roomType] || '🚪';
+    }
+
+    // Render policies
+    function renderPolicies() {
+      const container = document.getElementById('policies-list');
+      const policies = selectedCompany.policies || [];
+
+      if (policies.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No policies found</p>';
+        return;
+      }
+
+      // Group by category
+      const grouped = {};
+      policies.forEach(p => {
+        const cat = p.categoryName || 'Uncategorized';
+        if (!grouped[cat]) grouped[cat] = [];
+        grouped[cat].push(p);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([category, pols]) => `
+        <div class="mb-6">
+          <h4 class="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3">${category}</h4>
+          <div class="space-y-2">
+            ${pols.map(p => `
+              <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4">
+                <h5 class="font-medium text-gray-900 dark:text-white mb-1">${p.title}</h5>
+                <p class="text-sm text-gray-600 dark:text-slate-400">${p.summary}</p>
+                ${p.effectiveDate ? `<p class="text-xs text-gray-500 dark:text-slate-500 mt-2">Effective: ${p.effectiveDate}</p>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render employees
+    function renderEmployees() {
+      const container = document.getElementById('employees-list');
+      const employees = selectedCompany.employees || [];
+
+      if (employees.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 dark:text-slate-500 text-sm italic text-center py-6">No employees found</p>';
+        return;
+      }
+
+      // Group by department
+      const grouped = {};
+      employees.forEach(e => {
+        const dept = e.department || 'General';
+        if (!grouped[dept]) grouped[dept] = [];
+        grouped[dept].push(e);
+      });
+
+      container.innerHTML = Object.entries(grouped).map(([department, emps]) => `
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">${department}</h4>
+          <div class="space-y-2">
+            ${emps.map(e => `
+              <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-3 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">
+                    ${e.agentName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900 dark:text-white">${e.agentName}</p>
+                    <p class="text-sm text-gray-500 dark:text-slate-400">${e.jobTitle}</p>
+                  </div>
+                </div>
+                <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 rounded text-gray-600 dark:text-slate-400">${e.employmentType || 'full_time'}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        currentTab = tab;
+
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          if (b.dataset.tab === tab) {
+            b.classList.add('border-primary', 'text-primary');
+            b.classList.remove('border-transparent', 'text-gray-500', 'dark:text-slate-400');
+          } else {
+            b.classList.remove('border-primary', 'text-primary');
+            b.classList.add('border-transparent', 'text-gray-500', 'dark:text-slate-400');
+          }
+        });
+
+        // Show tab content
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(`tab-${tab}`).classList.remove('hidden');
+      });
+    });
+
+    // Search
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      renderCompanyList(e.target.value);
+    });
+
+    // Create company modal
+    document.getElementById('create-company-btn').addEventListener('click', () => {
+      document.getElementById('create-modal').classList.remove('hidden');
+      document.getElementById('new-company-name').value = '';
+      document.getElementById('new-company-name').focus();
+    });
+
+    document.getElementById('close-create-modal').addEventListener('click', () => {
+      document.getElementById('create-modal').classList.add('hidden');
+    });
+
+    document.getElementById('cancel-create').addEventListener('click', () => {
+      document.getElementById('create-modal').classList.add('hidden');
+    });
+
+    document.getElementById('confirm-create').addEventListener('click', async () => {
+      const name = document.getElementById('new-company-name').value.trim();
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        if (!res.ok) throw new Error('Failed to create company');
+        const company = await res.json();
+        document.getElementById('create-modal').classList.add('hidden');
+        await loadCompanies();
+        selectCompany(company.id);
+      } catch (error) {
+        console.error('Failed to create company:', error);
+        alert('Failed to create company');
+      }
+    });
+
+    // AI Setup modal
+    document.getElementById('ai-setup-btn').addEventListener('click', async () => {
+      if (!selectedCompany) return;
+      try {
+        const res = await fetch(`/api/companies/${selectedCompany.id}/auto-play`);
+        if (!res.ok) throw new Error('Failed to get setup prompt');
+        const data = await res.json();
+        document.getElementById('ai-prompt-content').textContent = data.prompt;
+        document.getElementById('ai-setup-modal').classList.remove('hidden');
+      } catch (error) {
+        console.error('Failed to get AI setup prompt:', error);
+        alert('Failed to get AI setup prompt');
+      }
+    });
+
+    document.getElementById('close-ai-modal').addEventListener('click', () => {
+      document.getElementById('ai-setup-modal').classList.add('hidden');
+    });
+
+    document.getElementById('close-ai-btn').addEventListener('click', () => {
+      document.getElementById('ai-setup-modal').classList.add('hidden');
+    });
+
+    document.getElementById('copy-prompt').addEventListener('click', () => {
+      const prompt = document.getElementById('ai-prompt-content').textContent;
+      navigator.clipboard.writeText(prompt).then(() => {
+        const btn = document.getElementById('copy-prompt');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Copied!';
+        setTimeout(() => btn.innerHTML = originalText, 2000);
+      });
+    });
+
+    // Delete company
+    document.getElementById('delete-company-btn').addEventListener('click', () => {
+      if (!selectedCompany) return;
+      document.getElementById('delete-company-name').textContent = selectedCompany.name;
+      document.getElementById('delete-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('cancel-delete').addEventListener('click', () => {
+      document.getElementById('delete-modal').classList.add('hidden');
+    });
+
+    document.getElementById('confirm-delete').addEventListener('click', async () => {
+      if (!selectedCompany) return;
+      try {
+        const res = await fetch(`/api/companies/${selectedCompany.id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete company');
+        document.getElementById('delete-modal').classList.add('hidden');
+        selectedCompany = null;
+        renderCompanyDetails();
+        await loadCompanies();
+      } catch (error) {
+        console.error('Failed to delete company:', error);
+        alert('Failed to delete company');
+      }
+    });
+
+    // Close modals on background click
+    ['create-modal', 'ai-setup-modal', 'delete-modal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', (e) => {
+        if (e.target.id === id) {
+          document.getElementById(id).classList.add('hidden');
+        }
+      });
+    });
+
+    // Handle Enter key for create company
+    document.getElementById('new-company-name').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('confirm-create').click();
+      }
+    });
+
+    // Initial load
+    loadCompanies();
+  </script>
+</body>
+</html>

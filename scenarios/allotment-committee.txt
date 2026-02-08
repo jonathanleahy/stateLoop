@@ -1,0 +1,40 @@
+LOCATION: Community Centre
+
+SCENARIO: Allotment Committee Emergency Meeting
+
+PUBLIC INFO:
+- Sunny Vale Allotments has 40 plots
+- Plot 17 has been reported for rule violations (keeping chickens without permission)
+- There's also a waiting list of 12 people for plots
+- Annual fees are due next month (£45 per plot)
+- The committee must decide on the violation AND allocate a newly vacant plot
+
+OPTIONS:
+- Evict Plot 17: Rules are rules. Give the plot to next person on waiting list.
+- Final Warning: Remove chickens within 2 weeks or face eviction. Keep current holder.
+- Grandfather Exception: Allow chickens for Plot 17 only, update rules for future.
+- Community Vote: Let all plot holders vote on the chicken issue at AGM.
+- Amnesty Plus Rules Change: Allow chickens site-wide with new guidelines (coop standards, noise limits).
+
+AGENT: Barbara
+APPEARANCE: glasses, short, female
+AGENDA: You're the Committee Chair and you take the rules seriously. Plot 17 is held by Dave who you've clashed with before. You want fair enforcement - if you let this slide, everyone will break rules. But you also don't want the drama of an eviction fight. The waiting list has a young family you'd love to see get a plot. AGREEABILITY: 35. Hard stance: Rules must be enforced consistently.
+
+AGENT: Trevor
+APPEARANCE: hat, wide, male
+AGENDA: You're the Treasurer. Dave (Plot 17) always pays on time and his plot is immaculate apart from the chickens. You've secretly been getting eggs from him. Evicting good payers is bad for finances. The waiting list people might not stick around. You'd prefer a compromise. AGREEABILITY: 65. Secret: You really don't want to lose the egg supply.
+
+AGENT: Sunita
+APPEARANCE: none, normal, female
+AGENDA: You're the Secretary and you handle complaints. You've had THREE complaints about Plot 17's cockerel crowing at 5am. But you've also had requests from others asking if THEY can keep chickens. Maybe the rules need updating? You want a solution that stops the complaints. AGREEABILITY: 70. You're tired of being the complaint person.
+
+AGENT: Dave (Plot 17)
+APPEARANCE: none, tall, male
+AGENDA: Those are YOUR chickens and they're not hurting anyone. You've had this plot for 8 years. The rules were written in 1987 and are outdated. Other allotments allow chickens. You'll fight eviction - you know people on the council. But you'd accept reasonable conditions. You'd even soundproof the coop. AGREEABILITY: 45. Hard stance: You're not giving up the chickens entirely.
+
+RULES:
+- Committee (Barbara, Trevor, Sunita) must reach majority decision
+- Dave can argue his case but doesn't get a vote
+- Must also decide who gets the vacant plot (next on list, or hold it)
+
+MAX_ROUNDS: 16

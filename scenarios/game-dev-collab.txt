@@ -1,0 +1,172 @@
+LOCATION: office
+
+SCENARIO: Block Drop - Collaborative Game Development
+
+ICON: 👨‍💻
+
+PUBLIC INFO:
+- We have a complete game design document for "Block Drop" (Tetris-style game)
+- Three experienced JavaScript developers will collaborate to write the code
+- Target: Single HTML file with embedded JS, under 1500 lines
+- Must be playable in any modern browser (Canvas API, no libraries)
+- Deliverable: Complete working game.html file
+
+OPTIONS:
+- Code Complete: All developers agree the code is finished and working
+- Needs Revision: Code needs more work before it's ready
+- Blocked: Technical issue preventing completion
+
+AGENT: Lead Dev (Sam)
+APPEARANCE: glasses, normal, male
+AGENDA: You are the lead developer. Coordinate the team, make architecture decisions, and write the core game loop and state management. Start by proposing how to split the work. You write clean, well-commented code. Say "Alright team, we have a solid design doc for Block Drop. Let's divide this up - I'll handle the game loop and state. Who wants what?"
+AGREEABILITY: 65
+
+AGENT: Frontend Dev (Maya)
+APPEARANCE: headphones, short, female
+AGENDA: You specialize in rendering and UI. You will write the Canvas drawing code, visual effects, and the HTML/CSS structure. You care about smooth animations and good visual feedback. You are enthusiastic and detail-oriented.
+AGREEABILITY: 70
+
+AGENT: Logic Dev (Alex)
+APPEARANCE: hat, tall, male
+AGENDA: You handle game logic - piece definitions, rotation, collision detection, line clearing. You write efficient, bug-free algorithms. You like to think through edge cases. You are methodical and thorough.
+AGREEABILITY: 60
+
+RULES:
+- All three developers must accept for code to be considered complete
+- The final game.html must be a complete, working single-file game
+- Code should follow the design document specifications
+- Each developer contributes their section to the working document
+
+MAX_ROUNDS: 25
+
+TASK_TYPE: document
+
+INPUT_DOCUMENT: Game Design
+# Block Drop - Game Design Document
+
+## Core Concept
+A Tetris-style falling block puzzle game. Pieces fall from the top, player rotates and moves them to complete horizontal lines.
+
+## Game Mechanics
+
+### Grid
+- 10 columns x 20 rows
+- Each cell is either empty (0) or filled (1)
+- Simple 2D array: `grid[y][x]`
+
+### Pieces (Tetrominoes)
+- 7 classic shapes: I, O, T, S, Z, J, L
+- Each piece is a 4x4 array of 0s and 1s
+- Rotation: transpose + reverse rows
+
+### Controls
+- Left/Right Arrow: Move piece
+- Up Arrow: Rotate
+- Down Arrow: Soft drop (faster fall)
+- Space: Hard drop (instant)
+
+### Core Loop
+1. Spawn piece at top center
+2. Piece falls one row per tick (speed increases with level)
+3. Player can move/rotate while falling
+4. When piece lands: lock it, check for complete lines
+5. Clear complete lines, add score
+6. Spawn next piece
+7. Game over if new piece overlaps existing blocks
+
+### Scoring
+- 1 line: 100 points
+- 2 lines: 300 points
+- 3 lines: 500 points
+- 4 lines (Tetris!): 800 points
+- Level up every 10 lines
+
+### Key Functions
+
+Rotation:
+```javascript
+function rotate(piece) {
+  return piece[0].map((_, i) => piece.map(row => row[i]).reverse());
+}
+```
+
+Collision Check:
+```javascript
+function canMove(piece, offsetX, offsetY) {
+  for (let y = 0; y < piece.length; y++) {
+    for (let x = 0; x < piece[y].length; x++) {
+      if (piece[y][x]) {
+        let newX = pieceX + x + offsetX;
+        let newY = pieceY + y + offsetY;
+        if (newX < 0 || newX >= COLS || newY >= ROWS) return false;
+        if (newY >= 0 && grid[newY][newX]) return false;
+      }
+    }
+  }
+  return true;
+}
+```
+
+Line Clear:
+```javascript
+function clearLines() {
+  let linesCleared = 0;
+  for (let y = ROWS - 1; y >= 0; y--) {
+    if (grid[y].every(cell => cell !== 0)) {
+      grid.splice(y, 1);
+      grid.unshift(new Array(COLS).fill(0));
+      linesCleared++;
+      y++;
+    }
+  }
+  return linesCleared;
+}
+```
+
+### Visual Design
+- Dark background (#1a1a2e)
+- Colorful pieces (classic Tetris colors)
+- Ghost piece showing where current piece will land
+- Next piece preview box
+- Score/Level/Lines display
+END_INPUT_DOCUMENT
+
+WORKING_DOCUMENTS:
+- game.html: The complete game file (HTML + JS)
+
+TASK_OUTPUT: game.html
+
+TASK_TEMPLATE:
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Block Drop</title>
+  <style>
+    body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: monospace; }
+    canvas { border: 2px solid #4a4a6a; }
+    #ui { color: #fff; margin-left: 20px; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="300" height="600"></canvas>
+  <div id="ui">
+    <h2>BLOCK DROP</h2>
+    <p>Score: <span id="score">0</span></p>
+    <p>Level: <span id="level">1</span></p>
+    <p>Lines: <span id="lines">0</span></p>
+    <h3>Next:</h3>
+    <canvas id="next" width="120" height="120"></canvas>
+    <h3>Controls:</h3>
+    <p>← → Move</p>
+    <p>↑ Rotate</p>
+    <p>↓ Soft Drop</p>
+    <p>Space Hard Drop</p>
+  </div>
+  <script>
+    // === GAME CODE GOES HERE ===
+    // Team: Add your sections below
+
+  </script>
+</body>
+</html>
+END_TEMPLATE

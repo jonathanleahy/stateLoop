@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hot Air Balloons</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0a0a1a;overflow:hidden;touch-action:none}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+let W,H,state='intro',score=0,bestScore=0,balloon,platforms,clouds,stars,particles,gust,gustTimer,level;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight}
+addEventListener('resize',resize);resize();
+const keys={};
+addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+let touches={heat:false,left:false,right:false};
+addEventListener('touchstart',e=>{e.preventDefault();for(let t of e.touches){let y=t.clientY/H,x=t.clientX/W;if(y<0.5)touches.heat=true;if(x<0.3)touches.left=true;if(x>0.7)touches.right=true}},{passive:false});
+addEventListener('touchend',e=>{touches={heat:false,left:false,right:false};for(let t of e.touches){let y=t.clientY/H,x=t.clientX/W;if(y<0.5)touches.heat=true;if(x<0.3)touches.left=true;if(x>0.7)touches.right=true}});
+addEventListener('click',()=>{if(state==='intro'||state==='over'){init();state='play'}});
+addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&(state==='intro'||state==='over')){init();state='play'}});
+function init(){
+  balloon={x:W/2,y:H*0.3,vx:0,vy:0,heat:0,landed:false,landTimer:0};
+  platforms=[];clouds=[];stars=[];particles=[];gust=0;gustTimer=0;level=0;score=0;
+  for(let i=0;i<80;i++)stars.push({x:Math.random()*W,y:Math.random()*H*0.7,s:Math.random()*2+0.5,b:Math.random()});
+  for(let i=0;i<6;i++)clouds.push({x:Math.random()*W,y:Math.random()*H*0.6+50,w:Math.random()*80+60,s:Math.random()*0.3+0.1,o:Math.random()*0.15+0.05});
+  addPlatform(true);
+}
+function addPlatform(first){
+  let pw=Math.max(70,120-level*5),px,py;
+  if(first){px=W/2-pw/2;py=H*0.75}
+  else{px=Math.random()*(W-pw-40)+20;py=Math.max(80,H*0.3+Math.random()*H*0.4-level*15)}
+  platforms=[{x:px,y:py,w:pw,target:pw*0.4}];
+}
+function drawBalloon(x,y,heating){
+  let bw=30,bh=42,basketW=18,basketH=12,ropeH=16;
+  // Envelope
+  ctx.save();ctx.translate(x,y-basketH/2-ropeH-bh/2);
+  let grad=ctx.createLinearGradient(-bw,0,bw,0);
+  grad.addColorStop(0,'#c0392b');grad.addColorStop(0.25,'#e67e22');grad.addColorStop(0.5,'#f1c40f');grad.addColorStop(0.75,'#e67e22');grad.addColorStop(1,'#c0392b');
+  ctx.beginPath();ctx.moveTo(0,-bh/2);
+  ctx.bezierCurveTo(bw,-bh/3,bw,bh/3,bw*0.35,bh/2);
+  ctx.lineTo(-bw*0.35,bh/2);
+  ctx.bezierCurveTo(-bw,bh/3,-bw,-bh/3,0,-bh/2);
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle='#8B4513';ctx.lineWidth=1;ctx.stroke();
+  // Stripes
+  for(let i=-1;i<=1;i+=2){
+    ctx.beginPath();ctx.moveTo(i*bw*0.3,-bh/2+5);ctx.lineTo(i*bw*0.25,bh/2-2);
+    ctx.strokeStyle='rgba(139,69,19,0.3)';ctx.lineWidth=2;ctx.stroke();
+  }
+  ctx.restore();
+  // Ropes
+  let ey=y-basketH/2-ropeH;
+  ctx.strokeStyle='#8B4513';ctx.lineWidth=1;
+  for(let dx of[-basketW/2,basketW/2]){
+    ctx.beginPath();ctx.moveTo(x+dx,y-basketH/2);ctx.lineTo(x+dx*0.6,ey);ctx.stroke();
+  }
+  // Basket
+  ctx.fillStyle='#6d4c1d';ctx.fillRect(x-basketW/2,y-basketH,basketW,basketH);
+  ctx.strokeStyle='#4a3210';ctx.lineWidth=1.5;ctx.strokeRect(x-basketW/2,y-basketH,basketW,basketH);
+  ctx.fillStyle='#5a3d15';ctx.fillRect(x-basketW/2,y-basketH,basketW,3);
+  // Heat glow
+  if(heating){
+    let hg=ctx.createRadialGradient(x,ey+5,0,x,ey+5,20);
+    hg.addColorStop(0,'rgba(255,140,0,0.4)');hg.addColorStop(1,'rgba(255,60,0,0)');
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(x,ey+5,20,0,Math.PI*2);ctx.fill();
+  }
+}
+function drawPlatform(p){
+  ctx.fillStyle='#2c3e50';ctx.fillRect(p.x,p.y,p.w,8);
+  ctx.fillStyle='#1a252f';ctx.fillRect(p.x,p.y+8,p.w,4);
+  // Target zone
+  let tx=p.x+(p.w-p.target)/2;
+  ctx.fillStyle='rgba(46,204,113,0.4)';ctx.fillRect(tx,p.y-2,p.target,2);
+  ctx.strokeStyle='#2ecc71';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  ctx.strokeRect(tx,p.y-2,p.target,2);ctx.setLineDash([]);
+}
+function drawCloud(cl){
+  ctx.fillStyle=`rgba(200,210,230,${cl.o})`;
+  ctx.beginPath();ctx.ellipse(cl.x,cl.y,cl.w/2,cl.w/4,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cl.x-cl.w*0.25,cl.y+5,cl.w/3,cl.w/5,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(cl.x+cl.w*0.25,cl.y+3,cl.w/3,cl.w/5,0,0,Math.PI*2);ctx.fill();
+}
+function drawHUD(){
+  // Height meter
+  let mh=H*0.5,mx=W-30,my=H*0.25;
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.fillRect(mx-4,my,8,mh);
+  let hpct=Math.max(0,Math.min(1,1-balloon.y/H));
+  ctx.fillStyle=`hsl(${hpct*120},70%,50%)`;ctx.fillRect(mx-4,my+mh*(1-hpct),8,mh*hpct);
+  ctx.fillStyle='#fff';ctx.font='11px monospace';ctx.textAlign='center';
+  ctx.fillText('ALT',mx,my-8);
+  ctx.fillText(Math.round(hpct*100)+'m',mx,my+mh+16);
+  // Speed indicator
+  let spd=Math.abs(balloon.vy);
+  let col=spd<1.5?'#2ecc71':spd<2.5?'#f39c12':'#e74c3c';
+  ctx.fillStyle=col;ctx.font='12px monospace';ctx.textAlign='left';
+  ctx.fillText('SPD:'+spd.toFixed(1),10,30);
+  // Score
+  ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.textAlign='left';
+  ctx.fillText('SCORE: '+score,10,52);
+  ctx.font='11px monospace';ctx.fillText('LEVEL: '+(level+1),10,70);
+  // Wind indicator
+  if(Math.abs(gust)>0.01){
+    ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='11px monospace';ctx.textAlign='center';
+    ctx.fillText((gust>0?'WIND >>':'<< WIND'),W/2,20);
+  }
+}
+function drawBackground(){
+  let bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#0a0a2e');bg.addColorStop(0.5,'#1a1040');bg.addColorStop(1,'#2d1b4e');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  let t=Date.now()*0.001;
+  stars.forEach(s=>{s.b+=0.02;ctx.fillStyle=`rgba(255,255,240,${0.4+Math.sin(s.b)*0.3})`;
+    ctx.fillRect(s.x,s.y,s.s,s.s)});
+  clouds.forEach(cl=>{cl.x+=cl.s;if(cl.x>W+cl.w)cl.x=-cl.w;drawCloud(cl)});
+}
+function update(){
+  if(state!=='play')return;
+  let heating=keys['arrowup']||keys['w']||touches.heat;
+  let windL=keys['arrowleft']||keys['a']||touches.left;
+  let windR=keys['arrowright']||keys['d']||touches.right;
+  if(balloon.landed){
+    balloon.landTimer++;
+    if(balloon.landTimer>60){balloon.landed=false;level++;addPlatform(false);balloon.vy=-2}
+    return;
+  }
+  // Heat physics
+  balloon.heat=Math.max(0,balloon.heat+(heating?0.08:-0.04));
+  balloon.vy+=0.035; // gravity
+  balloon.vy-=balloon.heat*0.07; // buoyancy
+  balloon.vy*=0.995; // drag
+  if(windL)balloon.vx-=0.12;
+  if(windR)balloon.vx+=0.12;
+  // Random gusts
+  gustTimer--;
+  if(gustTimer<=0){gust=(Math.random()-0.5)*0.06*(1+level*0.2);gustTimer=Math.random()*180+60}
+  balloon.vx+=gust;
+  balloon.vx*=0.98;
+  balloon.x+=balloon.vx;balloon.y+=balloon.vy;
+  // Wrap horizontally
+  if(balloon.x<-20)balloon.x=W+20;if(balloon.x>W+20)balloon.x=-20;
+  // Heat particles
+  if(heating&&Math.random()>0.5){
+    particles.push({x:balloon.x+(Math.random()-0.5)*10,y:balloon.y-20,vy:-Math.random()*2-1,
+      life:30,c:`hsla(${Math.random()*40+10},100%,60%,`});
+  }
+  particles=particles.filter(p=>{p.y+=p.vy;p.life--;return p.life>0});
+  // Platform collision
+  platforms.forEach(p=>{
+    let bx=balloon.x,by=balloon.y,bw=18;
+    if(bx+bw/2>p.x&&bx-bw/2<p.x+p.w&&by>=p.y-2&&by<=p.y+6&&balloon.vy>0){
+      if(Math.abs(balloon.vy)<2.5){
+        balloon.landed=true;balloon.landTimer=0;balloon.vy=0;balloon.vx=0;balloon.y=p.y-1;
+        let tx=p.x+(p.w-p.target)/2,onTarget=bx>tx&&bx<tx+p.target;
+        let heightBonus=Math.round(Math.max(0,(1-balloon.y/H)*50));
+        let pts=10+(onTarget?20:0)+heightBonus+level*5;
+        score+=pts;
+      } else {
+        state='over';bestScore=Math.max(bestScore,score);
+      }
+    }
+  });
+  // Fall off screen
+  if(balloon.y>H+50){state='over';bestScore=Math.max(bestScore,score)}
+}
+function drawIntro(){
+  drawBackground();
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.fillStyle='#f39c12';ctx.font='bold 36px sans-serif';
+  ctx.fillText('Hot Air Balloons',W/2,H*0.22);
+  drawBalloon(W/2,H*0.4,true);
+  ctx.fillStyle='#ecf0f1';ctx.font='15px monospace';
+  let lines=['Guide your balloon to land softly on platforms','',
+    'UP / W / Tap Top  =  Add Heat (rise)',
+    'LEFT-RIGHT / A-D  =  Wind (drift)',
+    'Release heat to descend gently','',
+    'Land SLOWLY on green target zones for bonus points',
+    'Crash too fast = Game Over!','',
+    'Click or press ENTER to start'];
+  lines.forEach((l,i)=>{ctx.fillStyle=i===0?'#bdc3c7':i>=9?'#2ecc71':'#95a5a6';
+    ctx.fillText(l,W/2,H*0.55+i*22)});
+}
+function drawGameOver(){
+  drawBackground();
+  platforms.forEach(drawPlatform);
+  drawBalloon(balloon.x,balloon.y,false);
+  ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(0,0,W,H);
+  ctx.textAlign='center';
+  ctx.fillStyle='#e74c3c';ctx.font='bold 34px sans-serif';
+  ctx.fillText('Game Over',W/2,H*0.32);
+  ctx.fillStyle='#f1c40f';ctx.font='bold 24px monospace';
+  ctx.fillText('Score: '+score,W/2,H*0.42);
+  ctx.fillStyle='#95a5a6';ctx.font='16px monospace';
+  ctx.fillText('Best: '+bestScore,W/2,H*0.49);
+  ctx.fillText('Level reached: '+(level+1),W/2,H*0.55);
+  ctx.fillStyle='#2ecc71';ctx.font='16px monospace';
+  ctx.fillText('Click or press ENTER to retry',W/2,H*0.65);
+}
+function draw(){
+  if(state==='intro'){drawIntro();requestAnimationFrame(draw);return}
+  if(state==='over'){drawGameOver();requestAnimationFrame(draw);return}
+  drawBackground();
+  platforms.forEach(drawPlatform);
+  // Particles
+  particles.forEach(p=>{ctx.fillStyle=p.c+(p.life/30)+')';
+    ctx.fillRect(p.x,p.y,3,3)});
+  let heating=keys['arrowup']||keys['w']||touches.heat;
+  drawBalloon(balloon.x,balloon.y,heating);
+  // Landing success flash
+  if(balloon.landed&&balloon.landTimer<30){
+    ctx.fillStyle=`rgba(46,204,113,${0.3-balloon.landTimer*0.01})`;ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center';ctx.fillStyle='#2ecc71';ctx.font='bold 22px sans-serif';
+    ctx.fillText('Nice Landing!',W/2,H*0.2);
+  }
+  drawHUD();
+  update();
+  requestAnimationFrame(draw);
+}
+init();draw();
+</script>
+</body>
+</html>

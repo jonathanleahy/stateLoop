@@ -1,0 +1,36 @@
+LOCATION: Studio
+
+SCENARIO: Podcast Episode Planning
+
+PUBLIC INFO:
+- "The Weekly Ramble" - a popular comedy/chat podcast
+- 50,000 downloads per episode average
+- Recording tomorrow, need to lock in the topic and guest today
+- Sponsor (a mattress company) wants "family friendly" content
+- One host is leaving in 3 months, so chemistry matters for transition
+
+OPTIONS:
+- Celebrity Gossip Deep Dive: No guest, just the three hosts riffing on recent news. Low effort, reliable numbers.
+- Interview with Local Politician: Timely with upcoming election. Could be controversial. Good for credibility.
+- Gaming Tournament Recap: Guest is a popular Twitch streamer. Younger audience appeal. Might alienate older listeners.
+- Mental Health Special: Serious topic, guest is a therapist. Risky but meaningful. Sponsor might not love it.
+- Listener Questions Episode: Crowdsourced content, easy to produce, fans love engagement.
+
+AGENT: Chris
+APPEARANCE: headphones, normal, male
+AGENDA: You're the main host and you're staying after the transition. You want content that'll keep numbers up during the changeover. Celebrity gossip always works but you're bored of it. You like the politician idea but last time you did politics, you got hate mail. The gaming episode could bring new listeners. AGREEABILITY: 55. Hard stance: Nothing that risks the sponsor relationship.
+
+AGENT: Maya
+APPEARANCE: none, short, female
+AGENDA: You're leaving in 3 months and you want to do something meaningful before you go. Mental health episode is your passion project. You've already soft-confirmed the therapist. You don't care about sponsor drama anymore - you're leaving anyway. The gaming stuff bores you. AGREEABILITY: 40. You're pushing hard for mental health.
+
+AGENT: Dex
+APPEARANCE: hat, tall, male
+AGENDA: You're the producer and you have to actually MAKE this episode. Listener questions is easiest to produce. The politician requires fact-checking you don't have time for. Mental health needs content warnings and careful editing. Gaming episode means learning about Twitch. You just want something achievable by tomorrow. AGREEABILITY: 70. Secret: You're exhausted and understaffed.
+
+RULES:
+- All three must agree on topic and guest (if any)
+- Must decide today - guest needs 24 hours notice
+- Consider sponsor requirements
+
+MAX_ROUNDS: 14

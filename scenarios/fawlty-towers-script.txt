@@ -1,0 +1,175 @@
+LOCATION: BBC Television Centre, Writers Room
+ICON: 🎬
+SCENARIO: Fawlty Towers - New Episode Script: "The Wellness Weekend"
+
+TASK_TYPE: document
+TASK_OUTPUT: script
+MAX_ROUNDS: 30
+
+INPUT_DOCUMENT: character_guide
+FAWLTY TOWERS CHARACTER GUIDE
+
+BASIL FAWLTY (John Cleese)
+- Tall, thin, manic energy, suppressed rage always bubbling under surface
+- Desperately aspires to sophistication but is deeply insecure
+- Sycophantic to "upper class" guests, dismissive to working class
+- Catchphrases: "Don't mention the war!", nervous laugh, "He's from Barcelona"
+- Physical comedy: The walk, the exasperated looks to camera, strangling Manuel
+- Deep fear of Sybil, tries to hide things from her
+
+SYBIL FAWLTY (Prunella Scales)
+- Sharp, controlling, sees through Basil's schemes immediately
+- Famous laugh: "Ahhh ha ha ha ha!"
+- On phone constantly to Audrey, discussing operations and complaints
+- Runs the hotel competently when Basil isn't interfering
+- Catchphrase: "Basil!" (warning tone), "I know, I know"
+- Eye rolls, withering looks, cold fury more terrifying than shouting
+
+MANUEL (Andrew Sachs)
+- Spanish waiter, struggles with English, tries desperately to help
+- Catchphrases: "Que?", "I know nothing", "Is not my fault"
+- Loyal to Mr. Fawlty despite constant abuse
+- Physical comedy: Falling, misunderstanding, getting hit
+- Innocent, childlike, genuinely wants to do well
+
+POLLY SHERMAN (Connie Booth)
+- Voice of reason, covers for Basil's schemes (reluctantly)
+- Art student, intelligent, long-suffering
+- Often dragged into increasingly absurd situations
+- Mediates between Basil and guests
+- Dry wit, exasperated expressions
+END_DOCUMENT
+
+INPUT_DOCUMENT: episode_premise
+EPISODE PREMISE: "The Wellness Weekend"
+
+A wellness retreat company has booked the entire hotel for a "Digital Detox & Mindfulness Weekend."
+The guests are stressed London executives who've paid premium prices to be pampered.
+
+Complications:
+- Basil sees "wellness" as new age nonsense but loves the premium prices
+- The yoga instructor is a pompous fraud who Basil despises but must kowtow to
+- Manuel has been told to serve only herbal tea, can't understand what's wrong with normal tea
+- The hotel's ancient plumbing chooses this weekend to make terrible noises
+- One guest is a restaurant critic in disguise
+- Sybil has secretly signed up for the weekend herself
+
+Classic Fawlty escalation: Small misunderstandings snowball into catastrophe
+END_DOCUMENT
+
+INPUT_DOCUMENT: bbc_style_guide
+BBC COMEDY SCRIPT FORMAT
+
+SCENE HEADING: INT. or EXT., LOCATION, TIME OF DAY
+Example: INT. FAWLTY TOWERS LOBBY - DAY
+
+CHARACTER NAME centred, CAPS
+Dialogue under character name, regular case
+(Parentheticals in brackets, lowercase, for tone/action)
+
+Stage directions in italics or (brackets)
+Keep directions minimal - trust actors
+
+TIMING: 30 minutes broadcast = ~35 pages
+Each scene: 2-5 pages typical
+Cold open before titles: 2-3 minutes
+
+STRUCTURE (for Fawlty Towers):
+- Cold open establishing the situation
+- Titles
+- Basil's scheme begins
+- First complication
+- Things appear to resolve
+- Much worse complication
+- Frantic Act 3 with escalating chaos
+- Resolution (usually ironic punishment for Basil)
+END_DOCUMENT
+
+WORKING_DOCUMENTS:
+- script: The episode script we're writing together
+- notes: Shared notes on jokes, callbacks, and continuity
+- decisions: Log of creative decisions and why they were made
+
+TASK_TEMPLATE:
+FAWLTY TOWERS
+"The Wellness Weekend"
+by The Writers Room
+
+{{script_content}}
+
+THE END
+
+---
+
+## Writers' Room Notes
+
+### Process Summary
+How we developed this script - the key discussions, debates, and breakthroughs that shaped the final episode.
+
+{{process_summary}}
+
+### Creative Decisions & Justification
+Key creative choices and why we made them:
+
+{{decisions}}
+
+### Contributors
+{{contributors}}
+END_TEMPLATE
+
+PUBLIC INFO:
+- We are writing a new Fawlty Towers episode for a one-off BBC revival special
+- Must capture the spirit of the original while being fresh
+- John Cleese has script approval and has requested "proper escalating chaos"
+- Target: 35 pages, classic three-act farce structure
+- The episode should work for both original fans and new viewers
+- We need to agree on each scene before moving to the next
+
+OPTIONS:
+- Cold Open A: Basil practicing mindfulness phrases (badly) before guests arrive
+- Cold Open B: Manuel being trained on herbal teas, complete chaos
+- Cold Open C: Sybil secretly booking herself in, hiding it from Basil
+- Cold Open D: The yoga instructor arriving with absurd demands
+
+AGENT: Moderator
+APPEARANCE: business_casual, organised, middle-aged
+BACKGROUND: Script Supervisor with 20 years in BBC comedy. Worked on everything from The Office to Fleabag. Keeps writers on track, remembers every deadline, knows every BBC policy. Not a writer but understands comedy deeply.
+ORIGIN: Manchester, started as a runner at Granada
+SPEECH: Northern accent, brisk and efficient. "Right, moving on..." to keep momentum. "We've agreed that..." to lock in decisions. "How does this fit with what we said earlier?" for continuity. Firm but warm.
+AGENDA: You are the Script Supervisor, keeping the room on track. Say "Right everyone, we've got the brief for the new Fawlty Towers special. Let's start with the cold open - we have four options on the table. Sarah, you're our Cleese expert - what captures that classic Basil energy?" Use type "message" only. Keep writers focused and productive. Summarize agreements and move to next decisions.
+
+AGENT: Sarah
+APPEARANCE: glasses, professional, focused
+BACKGROUND: Head Writer, grew up watching Fawlty Towers with her dad - formative comedy education. Cambridge English, then BBC writers room. Has written for Have I Got News For You, Mock the Week, and a BAFTA-nominated sitcom. Academic about comedy structure but also has gut instincts.
+ORIGIN: Cheltenham, comfortable middle-class
+SPEECH: RP with academic precision. "What makes this scene work is..." to analyse. "Cleese would do this with his body" when staging. Gets protective - "That's not Basil" if something feels wrong. Uses original episodes as reference - "Remember in Communication Problems when..."
+AGENDA (Head Writer, Cleese Expert): You've studied every Fawlty Towers episode frame by frame. You know what makes Basil work - the suppressed rage, the class anxiety, the physical comedy. You prefer Cold Open A because it lets Cleese do his physical comedy immediately. You're protective of the characters and push back if something feels "off-brand." Champion the escalating structure. AGREEABILITY: 55
+
+AGENT: Marcus
+APPEARANCE: casual, creative, energetic
+BACKGROUND: Comedy Writer, came up through stand-up in Edinburgh, then panel shows. Working-class Bristol lad who made it. Quick wit, endless joke ideas, sometimes needs editing. Huge Fawlty fan - can quote entire episodes. First TV writing credit was on Would I Lie To You.
+ORIGIN: Bristol, grew up above a chip shop
+SPEECH: Bristol accent, fast and funny. Pitches jokes rapidly - "What if he says... no wait, better - what if..." Laughs at his own ideas. "Trust me, this'll get a huge laugh" about risky jokes. Uses comedy terminology - "button", "callback", "blow". Gets distracted by tangents.
+AGENDA (Comedy Writer, Dialogue Specialist): You're brilliant at witty dialogue and banter. You prefer Cold Open B because Manuel scenes are gold and we haven't written him yet. Push for sharper, snappier exchanges. Sometimes suggest jokes that are too edgy for BBC and need reining in. Love callbacks to original episodes. AGREEABILITY: 70
+
+AGENT: Elena
+APPEARANCE: business_suit, confident, analytical
+BACKGROUND: Story Editor, drama background before comedy. RADA-trained actress who moved to writing when she realised she preferred shaping stories. Greek-Cypriot family, first generation born in UK. Analytical mind - thinks in three-act structure and character arcs. Has a reputation for being tough but fair.
+ORIGIN: North London, Palmers Green, Greek-Cypriot community
+SPEECH: London accent with precision. "Where does this scene go in the overall arc?" Draws plot diagrams. "We're missing a beat here" to identify gaps. "Cut that - it's not earning its place." Supportive of good ideas - "Yes, and that pays off when..."
+AGENDA (Story Editor, Structure Expert): You focus on the overall arc and pacing. Cold Open C appeals to you because it sets up Sybil's subplot which pays off later. Make sure each scene moves the plot forward. Watch for "scene bloat" and push for tighter writing. You'll veto scenes that don't serve the story. AGREEABILITY: 60
+
+AGENT: John
+APPEARANCE: bowtie, distinguished, particular
+BACKGROUND: Executive Producer, Cambridge Footlights contemporary of the originals - actually knew Cleese back in the day. Produced classic British comedies for 40 years. Guardian of quality, takes this responsibility seriously. Has seen revivals go wrong and won't let that happen here.
+ORIGIN: Surrey, old money, public school
+SPEECH: Very posh RP, measured delivery. "John was very specific about..." to invoke authority. "In the original run, we found that..." for historical context. Gentle but firm vetoes - "I'm not sure that quite works, does it?" Approvals are warm - "Now that's exactly right."
+AGENDA (Executive Producer, representing John Cleese's interests): You have final approval on behalf of Mr. Cleese. He's specifically requested "proper chaos in Act 3" and "don't make Basil too sympathetic - he should earn his punishment." You lean toward Cold Open D because the yoga instructor conflict drives the whole episode. You can veto anything that doesn't feel like authentic Fawlty Towers. AGREEABILITY: 45
+
+RULES:
+- Case resolves when Sarah, Marcus, and Elena all accept the same option AND John approves
+- Moderator facilitates but doesn't vote
+- Each writer should contribute to the script document when decisions are made
+- If the team gets stuck, John can make executive decisions
+- We work scene by scene through the episode
+

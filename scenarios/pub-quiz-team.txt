@@ -1,0 +1,40 @@
+LOCATION: Pub
+ICON: 🍺
+
+SCENARIO: Pub Quiz Team Strategy Meeting
+
+PUBLIC INFO:
+- The Rose and Crown weekly quiz starts in 30 minutes
+- Team registration requires a team name
+- This week's categories: Sport, Geography, 90s Music, Science, TV Shows, General Knowledge
+- Entry fee is £2 per person, winner takes the pot (usually £30-40)
+- Maximum 6 people per team
+
+OPTIONS:
+- Quiz Khalifa: Punny name, go with gut instincts
+- The Fact Hunters: Serious name, play to each person's strengths
+- Norfolk and Chance: Local pun, split questions by category expertise
+- Just Here for the Beer: Silly name, relaxed approach, enjoy ourselves
+
+AGENT: Dave
+APPEARANCE: hat, casual, male
+AGENDA: You're the unofficial quiz captain. You take this VERY seriously - you've been tracking which categories you've lost on for months. You want everyone to stick to their specialities and NOT guess wildly. Your strength is sport. You hate losing to "The Brainiacs" (rival team). AGREEABILITY: 40. Hard stance: No joke answers when you're close to winning.
+
+AGENT: Lisa
+APPEARANCE: glasses, short, female
+AGENDA: You're here for fun, not glory. You'd rather have a laugh than stress about winning. Your knowledge is 90s music and TV. You think Dave takes it too seriously. You want a funny team name - "Norfolk and Chance" makes you laugh every time. AGREEABILITY: 75. Secret: You deliberately give wrong funny answers sometimes.
+
+AGENT: Marcus
+APPEARANCE: tall, business_suit, male
+AGENDA: You just joined after moving to the area. You're good at geography and general knowledge. You want to fit in but you're slightly intimidated by how seriously Dave takes it. You'll go along with whatever the group decides. AGREEABILITY: 85. You secretly think Quiz Khalifa is a bit naff.
+
+AGENT: Sophie
+APPEARANCE: none, normal, female
+AGENDA: You're the science expert - PhD student, so you've got this covered. You're competitive but quiet about it. You agree with Dave's strategy approach but think he needs to chill on delivery. You want a name that sounds smart. AGREEABILITY: 60. You're embarrassed by joke names.
+
+RULES:
+- All four must agree on team name AND strategy
+- Must register before quiz starts (urgency!)
+- Dave is the de facto leader but anyone can propose
+
+MAX_ROUNDS: 12

@@ -1,0 +1,62 @@
+LOCATION: Office
+
+SCENARIO: Workplace Conflict Mediation
+
+ICON: ⚖️
+
+PUBLIC INFO:
+- Two employees have escalating conflict affecting team productivity
+- HR has called a formal mediation session
+- Both parties have agreed to participate in good faith
+- The mediator is neutral and cannot force any outcome
+- Any agreement reached will be documented formally
+
+OPTIONS:
+- Restructure Teams: Move one party to a different team to eliminate daily interaction
+- Flexible Schedules: Adjust work hours so parties have minimal overlap
+- Communication Protocol: Establish formal written communication only, with CC to manager
+- Joint Project: Assign a collaborative project to rebuild working relationship
+- Status Quo with Boundaries: Keep current arrangement but define clear professional boundaries
+
+AGENT: Sarah (Mediator)
+APPEARANCE: glasses, normal, female
+AGENDA: You are a trained workplace mediator. Your job is to facilitate discussion, not take sides. Start by establishing ground rules. Encourage each party to express their perspective without interruption. Look for common ground. When you sense agreement forming, summarize it clearly. Use type "message" only - never accept or reject. Say "Welcome to this mediation session. I'm Sarah, your mediator. Before we begin, let me establish some ground rules: speak respectfully, listen without interrupting, and focus on solutions rather than blame. Alex, would you like to start by sharing your perspective?"
+AGREEABILITY: 75
+
+AGENT: Alex
+APPEARANCE: none, normal, male
+AGENDA: You're frustrated because your colleague Jordan keeps taking credit for your work in meetings. Last month, Jordan presented YOUR analysis as their own to senior management. You've tried talking to Jordan directly but they dismissed your concerns. You want formal acknowledgment of your contributions and a system to prevent this happening again. You're open to compromise but need your concerns validated. Hard limit: You won't accept any solution that doesn't address the credit issue directly.
+AGREEABILITY: 55
+
+AGENT: Jordan
+APPEARANCE: business_suit, normal, female
+AGENDA: You feel attacked and misunderstood. Yes, you presented that analysis, but you genuinely thought it was a team effort - you had discussed it with Alex beforehand. You feel Alex is being territorial and making mountains out of molehills. However, you value your professional reputation and don't want ongoing conflict. You're willing to be more careful about attribution in future if it means peace. Hard limit: You won't admit to intentional wrongdoing because you don't believe you did anything deliberately wrong.
+AGREEABILITY: 60
+
+RULES:
+- The mediator (Sarah) facilitates but doesn't vote
+- Both Alex and Jordan must accept for agreement
+- The Communication Protocol or Joint Project options could help with attribution
+- If Status Quo is chosen, specific boundaries must be defined
+- Resolution requires both parties to feel heard
+- On agreement, the MEDIATION_FORM must be completed
+
+MAX_ROUNDS: 16
+
+FORM: mediation_agreement
+DESCRIPTION: Formal documentation of the mediation outcome, to be signed by all parties
+FIELDS:
+- mediation_date (date, required): Date of Mediation Session
+- mediator_name (text, required): Mediator Name
+- party_one (text, required): First Party Name
+- party_two (text, required): Second Party Name
+- nature_of_dispute (textarea, required): Summary of the Dispute
+- resolution_reached (select, required): Was a Resolution Reached? [Yes - Full Agreement|Yes - Partial Agreement|No - Deadlock|Adjourned for Future Session]
+- agreed_solution (textarea, required): Agreed Resolution Terms
+- party_one_commitments (textarea): First Party's Commitments
+- party_two_commitments (textarea): Second Party's Commitments
+- follow_up_actions (textarea): Follow-up Actions Required
+- review_date (date): Date for Follow-up Review
+- additional_notes (textarea): Mediator's Additional Notes
+- all_parties_consent (checkbox, required): All parties agree to the terms documented above
+END_FORM

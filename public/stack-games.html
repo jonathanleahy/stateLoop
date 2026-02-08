@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stack Games</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  min-height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  color: #fff;
+}
+.header {
+  text-align: center;
+  padding: 40px 20px 20px;
+}
+.header h1 {
+  font-size: 36px;
+  background: linear-gradient(135deg, #4ECDC4, #45B7D1, #DDA0DD);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header p {
+  color: rgba(255,255,255,0.5);
+  margin-top: 8px;
+  font-size: 14px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  max-width: 960px;
+  margin: 30px auto;
+  padding: 0 20px 40px;
+}
+.card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  color: #fff;
+  display: block;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(99, 102, 241, 0.2);
+}
+.card.coming-soon {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.card-preview {
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px;
+  position: relative;
+  overflow: hidden;
+}
+.card-preview canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.card-body {
+  padding: 16px 20px 20px;
+}
+.card-body h2 {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.card-body p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.4;
+}
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+.badge.playable {
+  background: rgba(78, 205, 196, 0.2);
+  color: #4ECDC4;
+}
+.badge.soon {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.4);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Stack Games</h1>
+  <p>Physics stacking games with fans, matching, and chaos</p>
+</div>
+
+<div class="grid">
+
+  <a href="bubble-stack.html" class="card">
+    <div class="card-preview" id="preview-bubbles" style="background: linear-gradient(180deg, #1a1a2e, #16213e);">
+      <span>🎈</span>
+    </div>
+    <div class="card-body">
+      <h2>Balloon Stack</h2>
+      <p>Stack balloons with physics! Heavy ones sink, light ones float. Blow with fans, shake to jostle, match 4 colors to pop!</p>
+      <span class="badge playable">Play Now</span>
+    </div>
+  </a>
+
+  <a href="shape-tower.html" class="card" id="shape-tower-card">
+    <div class="card-preview" style="background: linear-gradient(180deg, #1a2e1a, #162e16);">
+      <span>🪑</span>
+    </div>
+    <div class="card-body">
+      <h2>Shape Tower</h2>
+      <p>Stack odd shapes - chairs, boomerangs, scissors, hockey sticks, tables. Tetris meets physics chaos.</p>
+      <span class="badge playable">Play Now</span>
+    </div>
+  </a>
+
+  <a href="balloon-stacker.html" class="card">
+    <div class="card-preview" style="background: linear-gradient(180deg, #2e1a1a, #2e1616);">
+      <span>🎈</span>
+    </div>
+    <div class="card-body">
+      <h2>Balloon Stacker</h2>
+      <p>Stack balloons on strings. They want to float up - balance buoyancy vs weight or the tower lifts off!</p>
+      <span class="badge playable">Play Now</span>
+    </div>
+  </a>
+
+  <a href="hot-air-balloons.html" class="card">
+    <div class="card-preview" style="background: linear-gradient(180deg, #1a1a2e, #16163e);">
+      <span>🎈</span>
+    </div>
+    <div class="card-body">
+      <h2>Hot Air Balloons</h2>
+      <p>Guide hot air balloons to land gently on platforms. Control heat to rise and fall, wind to drift.</p>
+      <span class="badge playable">Play Now</span>
+    </div>
+  </a>
+
+  <a href="airplane-hangar.html" class="card">
+    <div class="card-preview" style="background: linear-gradient(180deg, #1a2e2e, #162e3e);">
+      <span>✈️</span>
+    </div>
+    <div class="card-body">
+      <h2>Airplane Hangar</h2>
+      <p>Park planes in the hangar without clipping wings. 5 plane types, SAT collision, tight packing bonuses!</p>
+      <span class="badge playable">Play Now</span>
+    </div>
+  </a>
+
+</div>
+
+<script>
+// Animate the bubble preview card with mini floating bubbles
+const el = document.getElementById('preview-bubbles');
+const c = document.createElement('canvas');
+c.width = 280; c.height = 160;
+el.querySelector('span').remove();
+el.appendChild(c);
+const cx = c.getContext('2d');
+const colors = ['#FF6B6B','#4ECDC4','#45B7D1','#FFEAA7','#DDA0DD'];
+const dots = [];
+for (let i = 0; i < 12; i++) {
+  dots.push({
+    x: Math.random() * 280,
+    y: 100 + Math.random() * 50,
+    r: 6 + Math.random() * 12,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vx: (Math.random() - 0.5) * 0.3,
+    phase: Math.random() * Math.PI * 2
+  });
+}
+function animPreview() {
+  cx.clearRect(0, 0, 280, 160);
+  const bg = cx.createLinearGradient(0, 0, 0, 160);
+  bg.addColorStop(0, '#1a1a2e'); bg.addColorStop(1, '#16213e');
+  cx.fillStyle = bg; cx.fillRect(0, 0, 280, 160);
+  // Ground
+  cx.strokeStyle = 'rgba(255,255,255,0.08)'; cx.lineWidth = 1;
+  cx.beginPath(); cx.moveTo(20, 140); cx.lineTo(260, 140); cx.stroke();
+  const t = performance.now() / 1000;
+  for (const d of dots) {
+    d.x += d.vx;
+    if (d.x < d.r) d.vx = Math.abs(d.vx);
+    if (d.x > 280 - d.r) d.vx = -Math.abs(d.vx);
+    const wobble = Math.sin(t * 1.5 + d.phase) * 1.5;
+    cx.beginPath(); cx.arc(d.x, d.y + wobble, d.r, 0, Math.PI * 2);
+    cx.fillStyle = d.color + 'AA'; cx.fill();
+    cx.strokeStyle = d.color; cx.lineWidth = 1; cx.stroke();
+    cx.beginPath(); cx.arc(d.x - d.r * 0.3, d.y + wobble - d.r * 0.3, d.r * 0.15, 0, Math.PI * 2);
+    cx.fillStyle = 'rgba(255,255,255,0.25)'; cx.fill();
+  }
+  // Title overlay
+  cx.fillStyle = 'rgba(255,255,255,0.8)'; cx.font = 'bold 20px sans-serif'; cx.textAlign = 'center';
+  cx.fillText('🎈 Balloon Stack', 140, 35);
+  requestAnimationFrame(animPreview);
+}
+animPreview();
+</script>
+</body>
+</html>

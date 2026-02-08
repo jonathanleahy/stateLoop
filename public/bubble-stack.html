@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Balloon Stack</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
+canvas { border-radius: 12px; box-shadow: 0 0 40px rgba(99, 102, 241, 0.3); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+let W, H, GROUND, CEIL;
+function resize() {
+  const s = Math.min(window.innerWidth * 0.95, 420);
+  W = canvas.width = s; H = canvas.height = s * 1.6;
+  GROUND = H - 20; CEIL = 12;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Each color has a different weight: heavy sinks, light floats
+const PALETTE = [
+  { color: '#FF6B6B', weight: 0.85, name: 'Heavy' },
+  { color: '#FFEAA7', weight: 0.60, name: 'Solid' },
+  { color: '#DDA0DD', weight: 0.40, name: 'Medium' },
+  { color: '#4ECDC4', weight: 0.20, name: 'Light' },
+  { color: '#45B7D1', weight: 0.05, name: 'Feather' },
+];
+
+const BUOYANCY = 0.025;
+const GRAV = 0.09;
+const BLOW = 0.35;
+const MIN_R = 14;
+const MAX_R_RATIO = 0.12;
+const MATCH_N = 4;
+const SHAKE_CD = 90;
+
+let bubbles = [], current = null, pops = [], floats = [];
+let score = 0, highScore = 0, growthSpeed = 1, popFlash = 0;
+let state = 'intro';
+let fps = 0, fc = 0, fpsT = performance.now();
+let leftFan = { angle: 0, speed: 0 }, rightFan = { angle: 0, speed: 0 };
+let keys = {}, touchSide = null;
+let shakeTimer = 0, shakeX = 0, shakeY = 0, shakeCooldown = 0;
+
+// Swaying funnel pendulum
+const PEND_LEN = 70, PEND_SWING = 0.6, PEND_SPEED = 2.2;
+function pendulum() {
+  const a = Math.sin(performance.now() / 1000 * PEND_SPEED) * PEND_SWING;
+  const px = W / 2, py = H * 0.28;
+  return { px, py, a, ex: px + Math.sin(a) * PEND_LEN, ey: py + Math.cos(a) * PEND_LEN };
+}
+function closestOnSeg(cx, cy, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
+  if (len2 === 0) return { x: ax, y: ay };
+  const t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / len2));
+  return { x: ax + t * dx, y: ay + t * dy };
+}
+function pendulumHit(b) {
+  const p = pendulum();
+  const c = closestOnSeg(b.x, b.y, p.px, p.py, p.ex, p.ey);
+  const dx = b.x - c.x, dy = b.y - c.y, dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist < b.r + 4 && dist > 0) {
+    const nx = dx / dist, ny = dy / dist;
+    b.x = c.x + nx * (b.r + 4); b.y = c.y + ny * (b.r + 4);
+    const vn = b.vx * nx + b.vy * ny;
+    b.vx -= 1.4 * vn * nx; b.vy -= 1.4 * vn * ny;
+    // pendulum push
+    b.vx += Math.cos(performance.now() / 1000 * PEND_SPEED) * PEND_SWING * PEND_LEN * 0.025;
+    return true;
+  }
+  return false;
+}
+
+function maxR() { return W * MAX_R_RATIO; }
+function spawn() {
+  const p = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+  return { x: W / 2, y: H * 0.15, r: MIN_R, color: p.color, weight: p.weight, vx: 0, vy: 0, t: 0 };
+}
+
+// --- INPUT ---
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); action(); }
+  if (e.code === 'KeyS') doShake();
+});
+window.addEventListener('keyup', e => { keys[e.code] = false; });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  const tx = (e.touches[0].clientX - rect.left) / rect.width;
+  const ty = (e.touches[0].clientY - rect.top) / rect.height;
+  if (ty > 0.9 && tx > 0.3 && tx < 0.7) { doShake(); return; }
+  touchSide = tx < 0.35 ? 'left' : tx > 0.65 ? 'right' : 'center';
+  if (state === 'growing' || state === 'intro' || state === 'gameover') action();
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const rect = canvas.getBoundingClientRect();
+  touchSide = (e.touches[0].clientX - rect.left) / rect.width < 0.35 ? 'left' :
+    (e.touches[0].clientX - rect.left) / rect.width > 0.65 ? 'right' : 'center';
+});
+canvas.addEventListener('touchend', () => { touchSide = null; });
+canvas.addEventListener('click', e => {
+  const rect = canvas.getBoundingClientRect();
+  const tx = (e.clientX - rect.left) / rect.width;
+  const ty = (e.clientY - rect.top) / rect.height;
+  if (ty > 0.9 && tx > 0.3 && tx < 0.7) { doShake(); return; }
+  if (state !== 'falling') action();
+});
+
+function action() {
+  if (state === 'intro' || state === 'gameover') { startGame(); return; }
+  if (state === 'growing') { current.vy = 1.5; state = 'falling'; }
+}
+function startGame() {
+  bubbles = []; score = 0; growthSpeed = 1; popFlash = 0; pops = []; floats = [];
+  leftFan = { angle: 0, speed: 0 }; rightFan = { angle: 0, speed: 0 };
+  shakeTimer = 0; shakeCooldown = 0; shakeX = shakeY = 0;
+  current = spawn(); state = 'growing';
+}
+function doShake() {
+  if (state !== 'growing' && state !== 'falling') return;
+  if (shakeCooldown > 0 || bubbles.length === 0) return;
+  shakeTimer = 20; shakeCooldown = SHAKE_CD;
+  for (const b of bubbles) {
+    b.vx += (Math.random() - 0.5) * 5;
+    b.vy += (Math.random() - 0.5) * 4;
+  }
+}
+function wantLeft() { return keys['ArrowLeft'] || keys['KeyA'] || touchSide === 'left'; }
+function wantRight() { return keys['ArrowRight'] || keys['KeyD'] || touchSide === 'right'; }
+
+// --- PHYSICS ---
+function resolve(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.sqrt(dx * dx + dy * dy), min = a.r + b.r;
+  if (dist >= min || dist === 0) return;
+  const nx = dx / dist, ny = dy / dist, overlap = min - dist;
+  const tw = a.weight + b.weight + 0.01;
+  const ar = b.weight / tw, br2 = a.weight / tw;
+  a.x -= nx * overlap * ar; a.y -= ny * overlap * ar;
+  b.x += nx * overlap * br2; b.y += ny * overlap * br2;
+  const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+  if (dvn > 0) {
+    a.vx -= nx * dvn * 0.45 * ar; a.vy -= ny * dvn * 0.45 * ar;
+    b.vx += nx * dvn * 0.45 * br2; b.vy += ny * dvn * 0.45 * br2;
+  }
+}
+
+function physicsStep() {
+  for (const b of bubbles) {
+    b.vy += GRAV * b.weight - BUOYANCY; // heavy sinks, light floats
+    b.x += b.vx; b.y += b.vy;
+    if (b.y + b.r > GROUND) { b.y = GROUND - b.r; b.vy *= -0.55; b.vx *= 0.88; }
+    if (b.y - b.r < CEIL) { b.y = CEIL + b.r; b.vy *= -0.45; b.vx *= 0.88; }
+    if (b.x - b.r < 0) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.45; }
+    if (b.x + b.r > W) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.45; }
+    b.vx *= 0.975;
+  }
+  for (let p = 0; p < 3; p++) {
+    for (let i = 0; i < bubbles.length; i++) {
+      for (let j = i + 1; j < bubbles.length; j++) resolve(bubbles[i], bubbles[j]);
+      const bi = bubbles[i];
+      if (bi.y + bi.r > GROUND) { bi.y = GROUND - bi.r; if (bi.vy > 0) bi.vy *= -0.1; }
+      if (bi.y - bi.r < CEIL) { bi.y = CEIL + bi.r; if (bi.vy < 0) bi.vy *= -0.1; }
+    }
+  }
+}
+
+// --- MATCHING ---
+function findGroup(start) {
+  const seen = new Set([start]), q = [start], group = [];
+  while (q.length) {
+    const b = q.shift(); group.push(b);
+    for (const o of bubbles) {
+      if (seen.has(o) || o.color !== start.color) continue;
+      const dx = b.x - o.x, dy = b.y - o.y;
+      if (Math.sqrt(dx * dx + dy * dy) < b.r + o.r + 4) { seen.add(o); q.push(o); }
+    }
+  }
+  return group;
+}
+function checkMatch(bubble) {
+  const group = findGroup(bubble);
+  if (group.length >= MATCH_N) {
+    let ax = 0, ay = 0;
+    for (const b of group) { pops.push({ x: b.x, y: b.y, r: b.r, color: b.color, t: 1 }); ax += b.x; ay += b.y; }
+    const pts = group.length * 25;
+    score += pts;
+    floats.push({ x: ax / group.length, y: ay / group.length, text: '+' + pts, t: 1 });
+    popFlash = 8;
+    bubbles = bubbles.filter(b => !group.includes(b));
+    return true;
+  }
+  return false;
+}
+
+// --- UPDATE ---
+function update() {
+  const bl = wantLeft(), br = wantRight();
+  if (bl) rightFan.speed = Math.min(rightFan.speed + 0.8, 18);
+  else rightFan.speed *= 0.93;
+  if (br) leftFan.speed = Math.min(leftFan.speed + 0.8, 18);
+  else leftFan.speed *= 0.93;
+  leftFan.angle += leftFan.speed * 0.1;
+  rightFan.angle += rightFan.speed * 0.1;
+
+  if (shakeTimer > 0) {
+    shakeX = (Math.random() - 0.5) * shakeTimer * 0.8;
+    shakeY = (Math.random() - 0.5) * shakeTimer * 0.8;
+    shakeTimer--;
+  } else { shakeX = shakeY = 0; }
+  if (shakeCooldown > 0) shakeCooldown--;
+
+  if (state === 'intro' || state === 'gameover') return;
+  pops = pops.filter(p => { p.t -= 0.04; return p.t > 0; });
+  floats = floats.filter(f => { f.y -= 1; f.t -= 0.015; return f.t > 0; });
+
+  if (state === 'growing' && current) {
+    current.t += 0.005 * growthSpeed;
+    if (current.t > 1) current.t = 1;
+    current.r = MIN_R + (maxR() - MIN_R) * current.t * current.t;
+    let blow = 0;
+    if (bl) blow -= BLOW * 1.5;
+    if (br) blow += BLOW * 1.5;
+    current.x += blow;
+    current.x = Math.max(current.r + 5, Math.min(W - current.r - 5, current.x));
+    if (current.r >= maxR()) {
+      popFlash = 15; state = 'gameover';
+      if (score > highScore) highScore = score;
+    }
+  }
+
+  if (state === 'falling' && current) {
+    current.vy += GRAV * current.weight - BUOYANCY;
+    let blow = 0;
+    if (bl) blow -= BLOW;
+    if (br) blow += BLOW;
+    current.vx += blow; current.vx *= 0.97;
+    current.x += current.vx; current.y += current.vy;
+    pendulumHit(current);
+    if (current.x - current.r < 0) { current.x = current.r; current.vx *= -0.4; }
+    if (current.x + current.r > W) { current.x = W - current.r; current.vx *= -0.4; }
+
+    let landed = false;
+    if (current.y + current.r >= GROUND) {
+      current.y = GROUND - current.r; current.vy = 0; current.vx *= 0.4; landed = true;
+    }
+    if (current.y - current.r <= CEIL) {
+      current.y = CEIL + current.r; current.vy = 0; current.vx *= 0.4; landed = true;
+    }
+    for (const b of bubbles) {
+      const dx = current.x - b.x, dy = current.y - b.y;
+      const dist = Math.sqrt(dx * dx + dy * dy), min = current.r + b.r;
+      if (dist < min && dist > 0) {
+        const nx = dx / dist, ny = dy / dist;
+        current.x = b.x + nx * min; current.y = b.y + ny * min;
+        b.vx += current.vx * 0.3; b.vy += current.vy * 0.2;
+        current.vy = 0; current.vx *= 0.25; landed = true;
+      }
+    }
+    if (landed) {
+      bubbles.push(current);
+      checkMatch(current);
+      // Game over: spawn area blocked
+      const sy = H * 0.15;
+      let blocked = false;
+      for (const b of bubbles) {
+        const dx = W / 2 - b.x, dy = sy - b.y;
+        if (Math.sqrt(dx * dx + dy * dy) < MIN_R + b.r + 5) { blocked = true; break; }
+      }
+      if (blocked || bubbles.length > 40) {
+        state = 'gameover'; if (score > highScore) highScore = score; popFlash = 15; return;
+      }
+      score += Math.round((current.r / maxR()) * 20);
+      growthSpeed = 1 + bubbles.length * 0.02;
+      current = spawn(); state = 'growing';
+    }
+  }
+  physicsStep();
+}
+
+// --- DRAWING ---
+function drawBalloon(x, y, r, color, weight, a) {
+  ctx.save(); ctx.globalAlpha = a == null ? 1 : a;
+  // String
+  ctx.strokeStyle = `rgba(255,255,255,${0.15 * (a || 1)})`;
+  ctx.lineWidth = 0.8; ctx.beginPath();
+  ctx.moveTo(x, y + r);
+  ctx.quadraticCurveTo(x + 2, y + r + 6, x - 1, y + r + 12);
+  ctx.stroke();
+  // Shadow
+  ctx.beginPath(); ctx.arc(x + 2, y + 2, r, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fill();
+  // Body
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fillStyle = color + 'CC'; ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+  // Knot
+  ctx.beginPath();
+  ctx.moveTo(x - 2.5, y + r); ctx.lineTo(x, y + r + 3); ctx.lineTo(x + 2.5, y + r);
+  ctx.fillStyle = color; ctx.fill();
+  // Shine
+  ctx.beginPath(); ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill();
+  // Weight label
+  if (r > 12 && (a == null || a > 0.5)) {
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = `bold ${Math.max(8, r * 0.35)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(weight > 0.7 ? 'H' : weight > 0.5 ? 'S' : weight > 0.3 ? 'M' : weight > 0.1 ? 'L' : 'F', x, y);
+  }
+  ctx.restore();
+}
+
+function drawFan(x, y, fan) {
+  const r = 22, active = fan.speed > 1;
+  if (active) {
+    ctx.beginPath(); ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(100,180,255,${Math.min(fan.speed / 18, 0.12)})`; ctx.fill();
+  }
+  ctx.beginPath(); ctx.arc(x, y, r + 2, 0, Math.PI * 2);
+  ctx.strokeStyle = active ? 'rgba(180,200,220,0.6)' : 'rgba(80,80,100,0.35)';
+  ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.lineWidth = 0.7;
+  ctx.strokeStyle = active ? 'rgba(150,170,190,0.3)' : 'rgba(70,70,90,0.25)';
+  ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x + r, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x, y + r); ctx.stroke();
+  ctx.save(); ctx.translate(x, y); ctx.rotate(fan.angle);
+  const ba = fan.speed > 6 ? 0.25 + 0.1 * Math.sin(fan.angle * 3) : 0.55;
+  for (let i = 0; i < 3; i++) {
+    ctx.save(); ctx.rotate(i * Math.PI * 2 / 3);
+    ctx.fillStyle = active ? `rgba(180,210,240,${ba})` : 'rgba(110,120,140,0.4)';
+    ctx.beginPath(); ctx.ellipse(0, -r * 0.45, 4.5, r * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  if (fan.speed > 10) {
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(180,210,240,${(fan.speed - 10) / 18 * 0.15})`; ctx.fill();
+  }
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2);
+  ctx.fillStyle = active ? '#8899aa' : '#556'; ctx.fill();
+  ctx.fillStyle = active ? '#556' : '#445';
+  ctx.fillRect(x - 2.5, y + r + 2, 5, 14);
+  ctx.fillRect(x - 10, y + r + 14, 20, 4);
+}
+
+function drawWindLines(fromX, fromY, dir, speed) {
+  if (speed < 1) return;
+  ctx.strokeStyle = `rgba(180,210,240,${Math.min(speed / 18, 0.3)})`; ctx.lineWidth = 1;
+  const t = performance.now() / 150;
+  for (let i = 0; i < 7; i++) {
+    const sy = fromY - 20 + i * 7, len = 25 + speed * 4;
+    ctx.beginPath(); ctx.moveTo(fromX, sy);
+    for (let j = 5; j < len; j += 4) ctx.lineTo(fromX + dir * j, sy + Math.sin(j * 0.15 + t + i * 1.3) * 2.5);
+    ctx.stroke();
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  ctx.save(); ctx.translate(shakeX, shakeY);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#1a1a2e'); bg.addColorStop(1, '#16213e');
+  ctx.fillStyle = bg; ctx.fillRect(-5, -5, W + 10, H + 10);
+  if (popFlash > 0) { ctx.fillStyle = `rgba(255,80,80,${popFlash / 15 * 0.25})`; ctx.fillRect(0, 0, W, H); popFlash--; }
+
+  // Ceiling + ground
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(15, CEIL); ctx.lineTo(W - 15, CEIL); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(15, GROUND); ctx.lineTo(W - 15, GROUND); ctx.stroke();
+
+  // Swaying funnel
+  const pnd = pendulum();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(pnd.px, pnd.py); ctx.lineTo(pnd.ex, pnd.ey); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(pnd.px, pnd.py, 5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(pnd.ex, pnd.ey, 7, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
+  ctx.lineCap = 'butt';
+
+  // Fans + wind
+  const fy = H * 0.3;
+  drawFan(30, fy, leftFan); drawFan(W - 30, fy, rightFan);
+  if (rightFan.speed > 1) drawWindLines(W - 58, fy, -1, rightFan.speed);
+  if (leftFan.speed > 1) drawWindLines(58, fy, 1, leftFan.speed);
+
+  // Balloons
+  for (const b of bubbles) drawBalloon(b.x, b.y, b.r, b.color, b.weight);
+  for (const p of pops) drawBalloon(p.x, p.y, p.r * (1 + (1 - p.t) * 0.6), p.color, 0.5, p.t * 0.7);
+  for (const f of floats) {
+    ctx.fillStyle = `rgba(255,255,255,${f.t})`; ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText(f.text, f.x, f.y);
+  }
+
+  // Current balloon
+  if (current && (state === 'growing' || state === 'falling')) {
+    if (state === 'growing' && current.r / maxR() > 0.7) {
+      ctx.beginPath(); ctx.arc(current.x, current.y, current.r + 8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,80,80,${(current.r / maxR() - 0.7) * 1.5})`; ctx.fill();
+    }
+    drawBalloon(current.x, current.y, current.r, current.color, current.weight);
+    if (state === 'growing') {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
+      ctx.fillText(Math.round((current.r / maxR()) * 100) + '%', current.x, current.y + current.r + 20);
+    }
+  }
+  ctx.restore();
+
+  // HUD (outside shake)
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('Score: ' + score, 12, 28);
+  ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('Best: ' + highScore, 12, 45);
+  ctx.textAlign = 'right';
+  ctx.fillText(bubbles.length + ' balloons', W - 12, 28);
+  ctx.fillText('x' + growthSpeed.toFixed(1), W - 12, 45);
+  ctx.fillText(fps + ' fps', W - 12, 62);
+
+  // Color legend
+  if (state === 'growing' || state === 'falling') {
+    ctx.textAlign = 'left'; ctx.font = '9px sans-serif';
+    PALETTE.forEach((p, i) => {
+      const ly = H - 8 - (PALETTE.length - 1 - i) * 13;
+      ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(12, ly, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillText(p.name, 20, ly + 3);
+    });
+  }
+
+  // Shake button
+  if (state === 'growing' || state === 'falling') {
+    const bx = W / 2, by = GROUND + 10;
+    const ready = shakeCooldown <= 0 && bubbles.length > 0;
+    ctx.fillStyle = ready ? 'rgba(255,180,60,0.2)' : 'rgba(80,80,80,0.15)';
+    ctx.strokeStyle = ready ? 'rgba(255,180,60,0.4)' : 'rgba(100,100,100,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(bx - 25, by - 9); ctx.arcTo(bx + 25, by - 9, bx + 25, by + 9, 7);
+    ctx.arcTo(bx + 25, by + 9, bx - 25, by + 9, 7); ctx.arcTo(bx - 25, by + 9, bx - 25, by - 9, 7);
+    ctx.arcTo(bx - 25, by - 9, bx + 25, by - 9, 7); ctx.fill(); ctx.stroke();
+    if (!ready && shakeCooldown > 0) {
+      ctx.fillStyle = 'rgba(255,180,60,0.08)';
+      ctx.fillRect(bx - 24, by - 8, 48 * (1 - shakeCooldown / SHAKE_CD), 16);
+    }
+    ctx.fillStyle = ready ? 'rgba(255,200,100,0.6)' : 'rgba(150,150,150,0.25)';
+    ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('SHAKE [S]', bx, by); ctx.textBaseline = 'alphabetic';
+  }
+
+  if (state === 'intro') drawIntro();
+  if (state === 'gameover') drawGameOver();
+}
+
+function drawIntro() {
+  ctx.fillStyle = 'rgba(0,0,0,0.85)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#4ECDC4'; ctx.font = 'bold 28px sans-serif';
+  ctx.fillText('BALLOON STACK', W / 2, H * 0.09);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '13px sans-serif';
+  ctx.fillText('Float, blow, match & pop!', W / 2, H * 0.09 + 24);
+
+  const cy = H * 0.19;
+  ctx.fillStyle = '#FFEAA7'; ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('CONTROLS', W / 2, cy);
+  [['SPACE / CLICK', 'Drop the balloon'], ['A / \u2190', 'Blow from the right'],
+   ['D / \u2192', 'Blow from the left'], ['S', 'Shake everything!']
+  ].forEach(([k, d], i) => {
+    const y = cy + 18 + i * 18;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'right'; ctx.fillStyle = '#4ECDC4'; ctx.fillText(k, W / 2 - 10, y);
+    ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(255,255,255,0.65)'; ctx.fillText(d, W / 2 + 10, y);
+  });
+
+  const ly = cy + 105;
+  ctx.textAlign = 'center'; ctx.fillStyle = '#DDA0DD'; ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('BALLOON WEIGHTS', W / 2, ly);
+  ctx.font = '11px sans-serif';
+  PALETTE.forEach((p, i) => {
+    const y = ly + 16 + i * 17;
+    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(W / 2 - 65, y - 3, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.textAlign = 'left';
+    const desc = p.weight > 0.7 ? ' \u2014 falls fast' : p.weight > 0.5 ? ' \u2014 falls steady' :
+      p.weight > 0.3 ? ' \u2014 drifts slowly' : p.weight > 0.1 ? ' \u2014 light, bouncy' : ' \u2014 floaty!';
+    ctx.fillText(p.name + desc, W / 2 - 53, y);
+  });
+
+  const ty = ly + 110;
+  ctx.textAlign = 'center'; ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('HOW TO PLAY', W / 2, ty);
+  ctx.font = '11px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ['Balloons grow \u2014 click or SPACE to release',
+   'The swaying funnel deflects falling balloons!',
+   'Use the fans to blow balloons into position',
+   'Match ' + MATCH_N + ' same color touching to pop',
+   'Heavy ones sink, light ones bounce and float',
+   'Press S to shake \u2014 game over if spawn blocked'
+  ].forEach((t, i) => ctx.fillText(t, W / 2, ty + 14 + i * 14));
+
+  ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.font = '10px sans-serif';
+  ctx.fillText('Mobile: tap to drop, L/R to blow, bottom to shake', W / 2, ty + 102);
+
+  const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 500);
+  ctx.globalAlpha = 0.4 + pulse * 0.6;
+  ctx.fillStyle = '#fff'; ctx.font = '15px sans-serif';
+  ctx.fillText('CLICK or SPACE to start', W / 2, H * 0.95);
+  ctx.globalAlpha = 1;
+}
+
+function drawGameOver() {
+  ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#FF6B6B'; ctx.font = 'bold 34px sans-serif';
+  ctx.fillText('POP!', W / 2, H / 2 - 50);
+  ctx.fillStyle = '#fff'; ctx.font = '22px sans-serif';
+  ctx.fillText('Score: ' + score, W / 2, H / 2 - 5);
+  ctx.font = '15px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillText(bubbles.length + ' balloons placed', W / 2, H / 2 + 25);
+  if (score >= highScore && score > 0) { ctx.fillStyle = '#FFEAA7'; ctx.fillText('NEW HIGH SCORE!', W / 2, H / 2 + 55); }
+  ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '13px sans-serif';
+  ctx.fillText('CLICK or SPACE to retry', W / 2, H / 2 + 90);
+}
+
+function loop() {
+  fc++; const now = performance.now();
+  if (now - fpsT >= 1000) { fps = fc; fc = 0; fpsT = now; }
+  update(); draw(); requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,3620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StateLoop - Scenario Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { primary: '#6366f1' } } }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900 min-h-screen">
+  <!-- Consistent Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 transition-colors">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <div class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white">StateLoop</h1>
+            <p class="text-xs text-gray-500 dark:text-slate-400">Stateless Agent Orchestration</p>
+          </div>
+        </a>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="flex items-center gap-2">
+        <button onclick="showTab('scenarios')" id="tab-scenarios" class="tab-btn px-4 py-2 rounded-lg bg-primary text-white font-medium text-sm transition-colors">Scenarios</button>
+        <button onclick="showTab('furniture')" id="tab-furniture" class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Furniture</button>
+        <button onclick="showTab('locations')" id="tab-locations" class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Locations</button>
+        <button onclick="showTab('companies')" id="tab-companies" class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Companies</button>
+        <button onclick="showTab('agents')" id="tab-agents" class="tab-btn px-4 py-2 rounded-lg bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 font-medium text-sm transition-colors hover:bg-gray-300 dark:hover:bg-slate-600">Agents</button>
+      </div>
+
+      <!-- Navigation Links -->
+      <div class="flex items-center gap-4">
+        <a href="/" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Home
+        </a>
+        <a href="/workflows.html" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Workflows
+        </a>
+        <a href="/docs" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Docs
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <div id="panel-scenarios" class="tab-panel">
+      <h2 class="text-xl font-semibold mb-4">Pre-made Scenarios</h2>
+      <div id="scenarios-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+    <div id="panel-furniture" class="tab-panel hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Furniture Store</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">View:</span>
+          <button onclick="setFurnitureView('2d')" id="view-2d-btn" class="px-3 py-1 rounded text-sm bg-primary text-white">2D</button>
+          <button onclick="setFurnitureView('3d')" id="view-3d-btn" class="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700">3D</button>
+        </div>
+      </div>
+      <div id="furniture-grid"></div>
+    </div>
+    <div id="panel-locations" class="tab-panel hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Location Showroom</h2>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-gray-600">View:</span>
+          <button onclick="setLocationView('2d')" id="loc-view-2d-btn" class="px-3 py-1 rounded text-sm bg-primary text-white">2D</button>
+          <button onclick="setLocationView('3d')" id="loc-view-3d-btn" class="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700">3D</button>
+        </div>
+      </div>
+      <div id="locations-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+    <div id="panel-companies" class="tab-panel hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Companies</h2>
+        <button onclick="showCreateCompanyModal()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Company
+        </button>
+      </div>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">Create and manage companies with buildings, rooms, employees, and policies for your scenarios.</p>
+      <div id="companies-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="text-center py-12">
+          <div class="text-6xl mb-4">🏢</div>
+          <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Loading companies...</h3>
+        </div>
+      </div>
+    </div>
+    <div id="panel-agents" class="tab-panel hidden">
+      <h2 class="text-xl font-semibold mb-4">Agent Customizer</h2>
+      <p class="text-gray-600 mb-4">Design custom agent appearances with full control over body type, age, ethnicity, and accessories.</p>
+
+      <!-- Live Agent Preview -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <h3 class="font-semibold mb-4">Live Preview</h3>
+          <div class="flex justify-center mb-4">
+            <div class="flex gap-2">
+              <button onclick="setAgentPreviewMode('2d')" id="agent-view-2d" class="px-3 py-1 rounded text-sm bg-primary text-white">2D</button>
+              <button onclick="setAgentPreviewMode('3d')" id="agent-view-3d" class="px-3 py-1 rounded text-sm bg-gray-200 text-gray-700">3D</button>
+            </div>
+          </div>
+          <canvas id="custom-agent-preview" width="200" height="220" class="mx-auto rounded-lg bg-gradient-to-b from-slate-100 to-slate-200"></canvas>
+          <div id="agent-code-preview" class="mt-4 p-3 bg-gray-100 rounded font-mono text-xs overflow-x-auto"></div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6">
+          <h3 class="font-semibold mb-4">Customize Agent</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Age Group</label>
+              <select id="agent-age" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="child">Child</option>
+                <option value="teen">Teen</option>
+                <option value="adult" selected>Adult</option>
+                <option value="middle">Middle-aged</option>
+                <option value="elderly">Elderly</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+              <select id="agent-gender" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Body Style</label>
+              <select id="agent-body-style" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="normal">Normal</option>
+                <option value="tall">Tall</option>
+                <option value="short">Short</option>
+                <option value="wide">Wide</option>
+                <option value="athletic">Athletic</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Body Shape (3D)</label>
+              <select id="agent-shape-type" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="box">Box</option>
+                <option value="cylinder">Cylinder</option>
+                <option value="oval">Oval</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Skin Tone</label>
+              <select id="agent-skin-tone" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="#fce4d6">Light</option>
+                <option value="#f5d0c5">Fair</option>
+                <option value="#d4a574">Medium</option>
+                <option value="#c68642">Tan</option>
+                <option value="#8d5524">Brown</option>
+                <option value="#5c3317">Dark</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Hair Color</label>
+              <select id="agent-hair-color" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="#1a1a1a">Black</option>
+                <option value="#4a3728">Brown</option>
+                <option value="#8b4513">Auburn</option>
+                <option value="#d4a574">Blonde</option>
+                <option value="#c0c0c0">Gray</option>
+                <option value="#ffffff">White</option>
+                <option value="#ff4500">Red</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Clothing Color</label>
+              <input type="color" id="agent-color" value="#3498db" onchange="updateAgentPreview()" class="w-full h-8 rounded cursor-pointer">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Accessory</label>
+              <select id="agent-accessory" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="none">None</option>
+                <option value="hat">🎩 Hat</option>
+                <option value="glasses">👓 Glasses</option>
+                <option value="bowtie">🎀 Bowtie</option>
+                <option value="headphones">🎧 Headphones</option>
+                <option value="scarf">🧣 Scarf</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Professional Role</label>
+              <select id="agent-profession" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="none">None (Casual)</option>
+                <option value="nurse_scrubs">👩‍⚕️ Nurse Scrubs</option>
+                <option value="doctor_coat">🥼 Doctor Coat</option>
+                <option value="police_uniform">👮 Police Uniform</option>
+                <option value="teacher">👩‍🏫 Teacher</option>
+                <option value="business_suit">👔 Business Suit</option>
+                <option value="healthcare_assistant">🏥 Healthcare Assistant</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Mobility Aid</label>
+              <select id="agent-mobility" onchange="updateAgentPreview()" class="w-full rounded border-gray-300 text-sm">
+                <option value="standing">🚶 Standing/Walking</option>
+                <option value="wheelchair">♿ Wheelchair</option>
+                <option value="walking_stick">🦯 Walking Stick</option>
+                <option value="zimmer_frame">🚶‍♂️ Zimmer Frame</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pre-built Agent Personas -->
+      <h3 class="text-xl font-bold mb-2 mt-8 text-gray-800 dark:text-white">Agent Personas</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-6">Pre-built characters with unique backstories, traits, and appearance settings ready for use in scenarios.</p>
+      <div id="agents-grid" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+    </div>
+  </main>
+
+  <div id="modal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden">
+      <div class="p-4 border-b flex justify-between">
+        <h3 id="modal-title" class="font-semibold"></h3>
+        <button onclick="closeModal()">X</button>
+      </div>
+      <div class="p-4 overflow-y-auto max-h-[60vh]">
+        <pre id="modal-content" class="text-sm whitespace-pre-wrap font-mono"></pre>
+      </div>
+      <div class="p-4 border-t flex gap-3 justify-end">
+        <button onclick="closeModal()" class="px-4 py-2 bg-gray-200 rounded">Close</button>
+        <button onclick="useScenario()" class="px-4 py-2 bg-primary text-white rounded">Use This</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentScenario = null;
+    let furnitureData = null;
+    let furnitureView = '2d';
+    let locationView = '2d';
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('bg-primary', 'text-white');
+        b.classList.add('bg-gray-200', 'text-gray-700');
+      });
+      document.getElementById('panel-' + tab).classList.remove('hidden');
+      document.getElementById('tab-' + tab).classList.add('bg-primary', 'text-white');
+      document.getElementById('tab-' + tab).classList.remove('bg-gray-200', 'text-gray-700');
+
+      // Load data for specific tabs
+      if (tab === 'companies' && !companiesLoaded) {
+        loadCompanies();
+      }
+    }
+
+    // Companies functionality
+    let companiesLoaded = false;
+    let companiesData = [];
+
+    async function loadCompanies() {
+      const grid = document.getElementById('companies-grid');
+      try {
+        const response = await fetch('/api/companies');
+        if (!response.ok) throw new Error('Failed to fetch companies');
+        const data = await response.json();
+        companiesData = data.companies || [];
+        companiesLoaded = true;
+        renderCompanies();
+      } catch (error) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Error loading companies</h3>
+            <p class="text-gray-500">${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderCompanies() {
+      const grid = document.getElementById('companies-grid');
+
+      if (companiesData.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-12">
+            <div class="text-6xl mb-4">🏢</div>
+            <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Companies Yet</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">Create your first company to use in scenarios.</p>
+            <button onclick="showCreateCompanyModal()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">
+              Create Company
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = companiesData.map(company => `
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow cursor-pointer"
+             onclick="viewCompany('${company.id}')">
+          <div class="h-24 flex items-center justify-center text-5xl" style="background: linear-gradient(135deg, ${company.primaryColor || '#3498db'}, ${company.secondaryColor || '#2c3e50'})">
+            🏢
+          </div>
+          <div class="p-4">
+            <h3 class="font-bold text-lg text-gray-800 dark:text-white">${company.name}</h3>
+            ${company.industry ? `<p class="text-sm text-gray-500 dark:text-gray-400">${company.industry}</p>` : ''}
+            ${company.size ? `<span class="inline-block mt-2 px-2 py-0.5 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded text-xs">${company.size}</span>` : ''}
+            <p class="text-sm text-gray-600 dark:text-gray-300 mt-2 line-clamp-2">${company.description || 'No description'}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function showCreateCompanyModal() {
+      const modal = document.createElement('div');
+      modal.id = 'create-company-modal';
+      modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50';
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full mx-4">
+          <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-700">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white">Create Company</h2>
+            <button onclick="closeCreateCompanyModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+          </div>
+          <div class="p-4 space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Company Name *</label>
+              <input type="text" id="new-company-name" class="w-full px-3 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Acme Corporation">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Industry</label>
+              <input type="text" id="new-company-industry" class="w-full px-3 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Technology">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Size</label>
+              <select id="new-company-size" class="w-full px-3 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white">
+                <option value="">Select size</option>
+                <option value="startup">Startup (1-10)</option>
+                <option value="small">Small (11-50)</option>
+                <option value="medium">Medium (51-200)</option>
+                <option value="large">Large (201-1000)</option>
+                <option value="enterprise">Enterprise (1000+)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+              <textarea id="new-company-description" rows="3" class="w-full px-3 py-2 border rounded-lg dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Brief description of the company..."></textarea>
+            </div>
+          </div>
+          <div class="p-4 border-t border-gray-200 dark:border-slate-700 flex justify-end gap-3">
+            <button onclick="closeCreateCompanyModal()" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 rounded-lg">Cancel</button>
+            <button onclick="createCompany()" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90">Create</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeCreateCompanyModal();
+      });
+    }
+
+    function closeCreateCompanyModal() {
+      const modal = document.getElementById('create-company-modal');
+      if (modal) modal.remove();
+    }
+
+    async function createCompany() {
+      const name = document.getElementById('new-company-name').value.trim();
+      if (!name) {
+        alert('Company name is required');
+        return;
+      }
+
+      const data = {
+        name,
+        industry: document.getElementById('new-company-industry').value.trim() || null,
+        size: document.getElementById('new-company-size').value || null,
+        description: document.getElementById('new-company-description').value.trim() || null
+      };
+
+      try {
+        const response = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error?.message || 'Failed to create company');
+        }
+
+        closeCreateCompanyModal();
+        companiesLoaded = false;
+        loadCompanies();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    function viewCompany(companyId) {
+      window.location.href = `/companies.html?id=${companyId}`;
+    }
+
+    function setFurnitureView(view) {
+      furnitureView = view;
+      document.getElementById('view-2d-btn').className = view === '2d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      document.getElementById('view-3d-btn').className = view === '3d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      if (furnitureData) renderFurniture();
+    }
+
+    async function loadScenarios() {
+      const res = await fetch('/api/scenarios');
+      const scenarios = await res.json();
+      const grid = document.getElementById('scenarios-grid');
+      grid.innerHTML = scenarios.map(s => {
+        // Use API-provided icon, or default
+        const icon = s.icon || '📍';
+
+        // Badge for document/collaborative scenarios
+        const badge = (s.taskType === 'document' || s.hasWorkingDocs)
+          ? '<span class="absolute top-2 right-2 bg-purple-500 text-white text-xs px-2 py-1 rounded-full">Collaborative</span>'
+          : '';
+
+        return '<div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 cursor-pointer hover:shadow-xl relative" onclick="preview(\'' + s.filename + '\')">' +
+          badge +
+          '<div class="text-4xl mb-2">' + icon + '</div>' +
+          '<h3 class="font-semibold dark:text-white">' + s.name + '</h3>' +
+          '<p class="text-sm text-gray-500 dark:text-gray-400">' + s.location + ' - ' + s.agentCount + ' agents</p>' +
+        '</div>';
+      }).join('');
+    }
+
+    async function preview(filename) {
+      const res = await fetch('/api/scenarios/' + filename);
+      const content = await res.text();
+      currentScenario = { filename, content };
+      document.getElementById('modal-title').textContent = filename;
+      document.getElementById('modal-content').textContent = content;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    async function useScenario() {
+      if (!currentScenario) return;
+      const res = await fetch('/api/cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenario: currentScenario.content, participants: [], options: [] })
+      });
+      if (res.ok) {
+        const c = await res.json();
+        window.location.href = '/?case=' + c.id;
+      }
+    }
+
+    // Location data with furniture items from the warehouse
+    const locationData = [
+      { id: 'hospital', name: 'Hospital Ward', icon: '🏥', desc: 'Medical ward with beds',
+        colors: { floor: '#e8e4df', wall: '#f5f5f0', accent: '#0077b6' },
+        furniture: ['hospital_bed', 'hospital_bed', 'nurse_station', 'iv_stand', 'wheelchair'] },
+      { id: 'library', name: 'Library', icon: '📚', desc: 'Quiet reading space',
+        colors: { floor: '#8b6914', wall: '#f5e6c8', accent: '#5d4037' },
+        furniture: ['bookshelf', 'bookshelf', 'reading_table', 'armchair'] },
+      { id: 'office', name: 'Office', icon: '🏢', desc: 'Corporate meeting room',
+        colors: { floor: '#4a5568', wall: '#e2e8f0', accent: '#2d3748' },
+        furniture: ['conference_table', 'office_chair', 'office_chair', 'office_chair', 'whiteboard'] },
+      { id: 'school', name: 'School', icon: '🎓', desc: 'Classroom setting',
+        colors: { floor: '#d4c4a8', wall: '#f5f5dc', accent: '#2d5016' },
+        furniture: ['blackboard', 'teacher_desk', 'student_desk', 'student_desk', 'student_desk'] },
+      { id: 'cafe', name: 'Cafe', icon: '☕', desc: 'Coffee shop',
+        colors: { floor: '#a0522d', wall: '#fffaf0', accent: '#3e2723' },
+        furniture: ['cafe_counter', 'cafe_table', 'cafe_table', 'coffee_machine'] },
+      { id: 'park', name: 'Park', icon: '🌳', desc: 'Outdoor space',
+        colors: { floor: '#4a7c59', wall: '#87ceeb', accent: '#2e7d32' },
+        furniture: ['tree', 'tree', 'tree', 'bench', 'bench'] }
+    ];
+
+    function setLocationView(view) {
+      locationView = view;
+      document.getElementById('loc-view-2d-btn').className = view === '2d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      document.getElementById('loc-view-3d-btn').className = view === '3d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      renderLocations();
+    }
+
+    // Location Viewer Modal
+    let selectedLocation = null;
+    let locationRotation = 0;
+    let locationZoom = 1;
+
+    function openLocationViewer(locationId) {
+      selectedLocation = locationData.find(l => l.id === locationId);
+      if (!selectedLocation) return;
+
+      locationRotation = 0;
+      locationZoom = 1;
+
+      let modal = document.getElementById('location-viewer-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'location-viewer-modal';
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50';
+        modal.innerHTML = `
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 id="loc-viewer-title" class="text-xl font-bold text-gray-800 dark:text-white"></h3>
+              <button onclick="closeLocationViewer()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="relative bg-gray-100 dark:bg-slate-700 rounded-lg" style="height: 400px;">
+              <canvas id="location-viewer-canvas" width="600" height="400" class="w-full h-full"></canvas>
+            </div>
+            <p id="loc-viewer-description" class="text-gray-600 dark:text-gray-300 mt-3 text-sm"></p>
+            <div class="flex gap-4 mt-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Rotate:</span>
+                <button onclick="rotateLocation(-30)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300">&#8634;</button>
+                <button onclick="rotateLocation(30)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300">&#8635;</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Zoom:</span>
+                <button onclick="zoomLocation(-0.2)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300">-</button>
+                <button onclick="zoomLocation(0.2)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      modal.classList.remove('hidden');
+      document.getElementById('loc-viewer-title').textContent = selectedLocation.name;
+      document.getElementById('loc-viewer-description').textContent = selectedLocation.desc;
+
+      // Setup mouse handlers after modal is visible
+      setTimeout(() => setupLocationCanvasHandlers(), 0);
+
+      renderLocationViewer();
+    }
+
+    function closeLocationViewer() {
+      const modal = document.getElementById('location-viewer-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function rotateLocation(degrees) {
+      locationRotation = (locationRotation + degrees) % 360;
+      renderLocationViewer();
+    }
+
+    function zoomLocation(delta) {
+      locationZoom = Math.max(0.5, Math.min(2, locationZoom + delta));
+      renderLocationViewer();
+    }
+
+    // Mouse drag state for rotation
+    let isDragging = false;
+    let lastMouseX = 0;
+
+    function setupLocationCanvasHandlers() {
+      const canvas = document.getElementById('location-viewer-canvas');
+      if (!canvas) return;
+
+      canvas.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        lastMouseX = e.clientX;
+        canvas.style.cursor = 'grabbing';
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - lastMouseX;
+        locationRotation = (locationRotation + deltaX * 0.5) % 360;
+        lastMouseX = e.clientX;
+        renderLocationViewer();
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        isDragging = false;
+        canvas.style.cursor = 'grab';
+      });
+
+      canvas.style.cursor = 'grab';
+    }
+
+    function renderLocationViewer() {
+      const canvas = document.getElementById('location-viewer-canvas');
+      if (!canvas || !selectedLocation) return;
+
+      // Draw with isometric rotation (not canvas rotation)
+      drawLocation3D(canvas, selectedLocation, locationRotation, locationZoom);
+    }
+
+    // Furniture Viewer Modal
+    let selectedFurniture = null;
+    let furnitureRotation = 0;
+    let furnitureZoom = 1;
+
+    function openFurnitureViewer(itemId) {
+      if (!furnitureData) return;
+      for (const cat of Object.values(furnitureData.categories)) {
+        const item = cat.items.find(i => i.id === itemId);
+        if (item) {
+          selectedFurniture = item;
+          break;
+        }
+      }
+      if (!selectedFurniture) return;
+
+      furnitureRotation = 0;
+      furnitureZoom = 1;
+
+      let modal = document.getElementById('furniture-viewer-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'furniture-viewer-modal';
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50';
+        modal.innerHTML = `
+          <div class="bg-white dark:bg-slate-800 rounded-xl p-6 max-w-lg w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+              <h3 id="furn-viewer-title" class="text-xl font-bold text-gray-800 dark:text-white"></h3>
+              <button onclick="closeFurnitureViewer()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="relative bg-gray-100 dark:bg-slate-700 rounded-lg" style="height: 300px;">
+              <canvas id="furniture-viewer-canvas" width="400" height="300" class="w-full h-full"></canvas>
+            </div>
+            <p id="furn-viewer-description" class="text-gray-600 dark:text-gray-300 mt-3 text-sm"></p>
+            <div id="furn-viewer-size" class="text-gray-500 dark:text-gray-400 text-xs mt-1"></div>
+            <div class="flex gap-4 mt-4">
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Rotate:</span>
+                <button onclick="rotateFurniture(-45)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300 dark:hover:bg-slate-500">&#8634;</button>
+                <button onclick="rotateFurniture(45)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300 dark:hover:bg-slate-500">&#8635;</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm text-gray-600 dark:text-gray-400">Zoom:</span>
+                <button onclick="zoomFurniture(-0.2)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300 dark:hover:bg-slate-500">-</button>
+                <button onclick="zoomFurniture(0.2)" class="px-3 py-1 bg-gray-200 dark:bg-slate-600 rounded hover:bg-gray-300 dark:hover:bg-slate-500">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      modal.classList.remove('hidden');
+      document.getElementById('furn-viewer-title').textContent = selectedFurniture.name;
+      document.getElementById('furn-viewer-description').textContent = selectedFurniture.description;
+      document.getElementById('furn-viewer-size').textContent = `Size: ${selectedFurniture.size.w} x ${selectedFurniture.size.h}`;
+
+      renderFurnitureViewer();
+    }
+
+    function closeFurnitureViewer() {
+      const modal = document.getElementById('furniture-viewer-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function rotateFurniture(degrees) {
+      furnitureRotation = (furnitureRotation + degrees) % 360;
+      renderFurnitureViewer();
+    }
+
+    function zoomFurniture(delta) {
+      furnitureZoom = Math.max(0.5, Math.min(3, furnitureZoom + delta));
+      renderFurnitureViewer();
+    }
+
+    function renderFurnitureViewer() {
+      const canvas = document.getElementById('furniture-viewer-canvas');
+      if (!canvas || !selectedFurniture) return;
+
+      // Use the same drawing approach as location viewer
+      drawFurnitureViewer3D(canvas, selectedFurniture, furnitureRotation, furnitureZoom);
+    }
+
+    // Furniture viewer using same approach as location viewer
+    function drawFurnitureViewer3D(canvas, item, rotation = 0, zoom = 1) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw grid background for reference
+      ctx.strokeStyle = '#e5e5e5';
+      ctx.lineWidth = 1;
+      const gridSize = 20;
+      for (let x = 0; x < w; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Same isometric setup as location viewer
+      const isoAngle = Math.PI / 6;
+      const scale = 1.5 * zoom;
+      const originX = w / 2;
+      const originY = h / 2 + 30;
+      const rotRad = rotation * Math.PI / 180;
+
+      // Rotate point around origin in XY plane, then apply isometric (same as location viewer)
+      function toIso(x, y, z) {
+        const rx = x * Math.cos(rotRad) - y * Math.sin(rotRad);
+        const ry = x * Math.sin(rotRad) + y * Math.cos(rotRad);
+        return {
+          x: originX + (rx - ry) * Math.cos(isoAngle) * scale,
+          y: originY + (rx + ry) * Math.sin(isoAngle) * scale - z * scale
+        };
+      }
+
+      // Draw isometric box helper (same as location viewer)
+      function drawIsoBox(bx, by, bz, bw, bd, bh, topColor, leftColor, rightColor) {
+        const t1 = toIso(bx, by, bz + bh);
+        const t2 = toIso(bx + bw, by, bz + bh);
+        const t3 = toIso(bx + bw, by + bd, bz + bh);
+        const t4 = toIso(bx, by + bd, bz + bh);
+        const l1 = toIso(bx, by + bd, bz);
+        const l2 = toIso(bx, by + bd, bz + bh);
+        const l4 = toIso(bx + bw, by + bd, bz);
+        const r1 = toIso(bx + bw, by, bz);
+        const r2 = toIso(bx + bw, by, bz + bh);
+        const r4 = toIso(bx + bw, by + bd, bz);
+
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(t1.x, t1.y); ctx.lineTo(t2.x, t2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(t4.x, t4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = leftColor;
+        ctx.beginPath();
+        ctx.moveTo(l1.x, l1.y); ctx.lineTo(l2.x, l2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(l4.x, l4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = rightColor;
+        ctx.beginPath();
+        ctx.moveTo(r1.x, r1.y); ctx.lineTo(r2.x, r2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(r4.x, r4.y);
+        ctx.closePath(); ctx.fill();
+      }
+
+      // Draw shadow on ground
+      ctx.fillStyle = 'rgba(0,0,0,0.15)';
+      const sw = item.size.w * 0.4;
+      const sd = item.size.h * 0.4;
+      const shadowPts = [
+        toIso(-sw/2, -sd/2, 0),
+        toIso(sw/2, -sd/2, 0),
+        toIso(sw/2, sd/2, 0),
+        toIso(-sw/2, sd/2, 0)
+      ];
+      ctx.beginPath();
+      ctx.moveTo(shadowPts[0].x, shadowPts[0].y);
+      shadowPts.forEach(p => ctx.lineTo(p.x, p.y));
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw furniture using shared drawIsoBox
+      const itemW = item.size.w * 0.5;
+      const itemD = item.size.h * 0.5;
+      const itemH = Math.min(itemW, itemD) * 0.8;
+
+      // Draw based on item type
+      switch (item.id) {
+        case 'hospital_bed':
+          drawIsoBox(-itemW/2, -itemD/2, 0, itemW, itemD, 12, '#808080', '#606060', '#707070');
+          drawIsoBox(-itemW/2 + 2, -itemD/2 + 2, 12, itemW - 4, itemD - 4, 8, '#e8f4f8', '#c8d4d8', '#d8e4e8');
+          drawIsoBox(-itemW/2 + 3, -itemD/2 + 3, 20, 15, 12, 5, '#ffffff', '#e0e0e0', '#f0f0f0');
+          drawIsoBox(-itemW/2, -itemD/2, 0, itemW, 4, 35, '#a0a0a0', '#808080', '#909090');
+          break;
+        case 'bookshelf':
+          drawIsoBox(-itemW/2, -itemD/2, 0, itemW, 4, itemH, '#5d4037', '#3e2723', '#4e3a2d');
+          for (let i = 0; i < 3; i++) {
+            const shelfZ = i * (itemH / 3);
+            drawIsoBox(-itemW/2, -itemD/2, shelfZ, itemW, itemD, 2, '#6d5047', '#4e3a2d', '#5e4a3d');
+          }
+          break;
+        case 'conference_table':
+        case 'reading_table':
+        case 'teacher_desk':
+        case 'cafe_table':
+          drawIsoBox(-itemW/2 + 2, -itemD/2 + 2, 0, 4, 4, 20, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(itemW/2 - 6, -itemD/2 + 2, 0, 4, 4, 20, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(-itemW/2 + 2, itemD/2 - 6, 0, 4, 4, 20, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(itemW/2 - 6, itemD/2 - 6, 0, 4, 4, 20, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(-itemW/2, -itemD/2, 20, itemW, itemD, 3, '#8b7355', '#6d5545', '#7d6555');
+          break;
+        case 'office_chair':
+          drawIsoBox(-itemW/2 + 2, -itemD/2 + 2, 0, 3, 3, 15, '#2c2c2c', '#1a1a1a', '#222222');
+          drawIsoBox(itemW/2 - 5, -itemD/2 + 2, 0, 3, 3, 15, '#2c2c2c', '#1a1a1a', '#222222');
+          drawIsoBox(-itemW/2 + 2, itemD/2 - 5, 0, 3, 3, 15, '#2c2c2c', '#1a1a1a', '#222222');
+          drawIsoBox(itemW/2 - 5, itemD/2 - 5, 0, 3, 3, 15, '#2c2c2c', '#1a1a1a', '#222222');
+          drawIsoBox(-itemW/2, -itemD/2, 15, itemW, itemD, 4, '#4a4a4a', '#3a3a3a', '#404040');
+          drawIsoBox(-itemW/2, -itemD/2, 19, itemW, 4, 25, '#4a4a4a', '#3a3a3a', '#404040');
+          break;
+        case 'tree':
+          drawIsoBox(-5, -5, 0, 10, 10, 30, '#5d4037', '#3e2723', '#4e3a2d');
+          const treeTop = toIso(0, 0, 45);
+          ctx.fillStyle = '#2e7d32';
+          ctx.beginPath();
+          ctx.arc(treeTop.x, treeTop.y, 25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#388e3c';
+          ctx.beginPath();
+          ctx.arc(treeTop.x - 8, treeTop.y + 5, 18, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'bench':
+          drawIsoBox(-itemW/2 + 3, -itemD/2 + 2, 0, 6, itemD - 4, 18, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(itemW/2 - 9, -itemD/2 + 2, 0, 6, itemD - 4, 18, '#5d4037', '#3e2723', '#4e3a2d');
+          drawIsoBox(-itemW/2, -itemD/2, 18, itemW, itemD, 3, '#8b7355', '#6d5545', '#7d6555');
+          drawIsoBox(-itemW/2, -itemD/2, 21, itemW, 4, 20, '#8b7355', '#6d5545', '#7d6555');
+          break;
+        case 'window':
+          const winPts = [toIso(-itemW/2, 0, 0), toIso(itemW/2, 0, 0), toIso(itemW/2, 0, itemH), toIso(-itemW/2, 0, itemH)];
+          ctx.fillStyle = '#5d4037';
+          ctx.beginPath();
+          ctx.moveTo(winPts[0].x, winPts[0].y);
+          winPts.forEach(p => ctx.lineTo(p.x, p.y));
+          ctx.closePath();
+          ctx.fill();
+          const glassPts = [toIso(-itemW/2 + 4, 0, 4), toIso(itemW/2 - 4, 0, 4), toIso(itemW/2 - 4, 0, itemH - 4), toIso(-itemW/2 + 4, 0, itemH - 4)];
+          ctx.fillStyle = 'rgba(135, 206, 235, 0.6)';
+          ctx.beginPath();
+          ctx.moveTo(glassPts[0].x, glassPts[0].y);
+          glassPts.forEach(p => ctx.lineTo(p.x, p.y));
+          ctx.closePath();
+          ctx.fill();
+          break;
+        default:
+          // Generic box for unknown items
+          drawIsoBox(-itemW/2, -itemD/2, 0, itemW, itemD, itemH, '#888888', '#666666', '#777777');
+      }
+
+      // Draw rotation hint
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Use buttons to rotate', w / 2, h - 8);
+    }
+
+    // Shared shadeColor helper used by furniture and location viewers
+    function shadeColor(color, amount) {
+      const num = parseInt(color.replace('#', ''), 16);
+      const r = Math.max(0, Math.min(255, ((num >> 16) & 0xff) + amount));
+      const g = Math.max(0, Math.min(255, ((num >> 8) & 0xff) + amount));
+      const b = Math.max(0, Math.min(255, (num & 0xff) + amount));
+      return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+    }
+
+    function loadLocations() {
+      renderLocations();
+    }
+
+    function renderLocations() {
+      const grid = document.getElementById('locations-grid');
+      grid.innerHTML = locationData.map(l => `
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow cursor-pointer" onclick="openLocationViewer('${l.id}')">
+          <canvas id="loc-canvas-${l.id}" width="280" height="180" class="w-full rounded-lg mb-3"></canvas>
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-2xl">${l.icon}</span>
+            <h3 class="font-semibold text-gray-800 dark:text-white">${l.name}</h3>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-gray-400">${l.desc}</p>
+          <p class="text-xs text-primary mt-2">Click to view in 3D</p>
+        </div>
+      `).join('');
+
+      // Draw locations after DOM update
+      requestAnimationFrame(() => {
+        locationData.forEach(loc => {
+          const canvas = document.getElementById('loc-canvas-' + loc.id);
+          if (canvas) {
+            if (locationView === '3d') {
+              drawLocation3D(canvas, loc);
+            } else {
+              drawLocation2D(canvas, loc);
+            }
+          }
+        });
+      });
+    }
+
+    // Furniture placement layouts for each location
+    const locationLayouts = {
+      hospital: [
+        { id: 'hospital_bed', x: 50, y: 50 },
+        { id: 'hospital_bed', x: 130, y: 50 },
+        { id: 'hospital_bed', x: 210, y: 50 },
+        { id: 'nurse_station', x: 20, y: 120 },
+        { id: 'iv_stand', x: 90, y: 100 },
+        { id: 'wheelchair', x: 180, y: 120 }
+      ],
+      library: [
+        { id: 'bookshelf', x: 15, y: 20 },
+        { id: 'bookshelf', x: 230, y: 20 },
+        { id: 'reading_table', x: 100, y: 60 },
+        { id: 'reading_table', x: 100, y: 120 }
+      ],
+      office: [
+        { id: 'conference_table', x: 90, y: 60 },
+        { id: 'office_chair', x: 70, y: 45 },
+        { id: 'office_chair', x: 120, y: 45 },
+        { id: 'office_chair', x: 170, y: 45 },
+        { id: 'office_chair', x: 70, y: 130 },
+        { id: 'office_chair', x: 120, y: 130 },
+        { id: 'whiteboard', x: 110, y: 10 }
+      ],
+      school: [
+        { id: 'blackboard', x: 80, y: 15 },
+        { id: 'teacher_desk', x: 110, y: 65 },
+        { id: 'student_desk', x: 60, y: 110 },
+        { id: 'student_desk', x: 130, y: 110 },
+        { id: 'student_desk', x: 200, y: 110 },
+        { id: 'student_desk', x: 60, y: 145 },
+        { id: 'student_desk', x: 130, y: 145 },
+        { id: 'student_desk', x: 200, y: 145 }
+      ],
+      cafe: [
+        { id: 'cafe_counter', x: 60, y: 20 },
+        { id: 'coffee_machine', x: 180, y: 25 },
+        { id: 'cafe_table', x: 60, y: 100 },
+        { id: 'cafe_table', x: 140, y: 100 },
+        { id: 'cafe_table', x: 100, y: 140 }
+      ],
+      park: [
+        { id: 'tree', x: 30, y: 30 },
+        { id: 'tree', x: 240, y: 25 },
+        { id: 'tree', x: 35, y: 140 },
+        { id: 'tree', x: 235, y: 135 },
+        { id: 'bench', x: 100, y: 85 },
+        { id: 'bench', x: 170, y: 85 }
+      ]
+    };
+
+    // 2D Top-down location view - uses furniture drawing functions
+    function drawLocation2D(canvas, loc) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Floor
+      ctx.fillStyle = loc.colors.floor;
+      ctx.fillRect(0, 0, w, h);
+
+      // Floor texture based on location
+      if (loc.id === 'hospital') {
+        ctx.strokeStyle = '#d0ccc7';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+        for (let y = 0; y < h; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      } else if (loc.id === 'library') {
+        ctx.strokeStyle = '#7a5d12';
+        for (let y = 0; y < h; y += 15) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+      } else if (loc.id === 'office') {
+        ctx.fillStyle = '#3d4556';
+        for (let i = 0; i < 100; i++) { ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      } else if (loc.id === 'cafe') {
+        ctx.strokeStyle = '#8b4513';
+        for (let x = 0; x < w; x += 25) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      } else if (loc.id === 'park') {
+        ctx.fillStyle = '#3d6b4a';
+        for (let i = 0; i < 150; i++) { ctx.fillRect(Math.random() * w, Math.random() * h, 2, 4); }
+        // Path
+        ctx.strokeStyle = '#c9b896';
+        ctx.lineWidth = 25;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(40, 90);
+        ctx.lineTo(240, 90);
+        ctx.stroke();
+      }
+
+      // Wall for indoor locations
+      if (loc.id !== 'park') {
+        ctx.fillStyle = loc.colors.wall;
+        ctx.fillRect(0, 0, w, 35);
+        ctx.fillStyle = loc.colors.accent;
+        ctx.fillRect(0, 31, w, 4);
+      }
+
+      // Draw furniture using furniture warehouse functions
+      const layout = locationLayouts[loc.id] || [];
+      layout.forEach(placement => {
+        // Get furniture item from warehouse
+        const item = getFurnitureItem(placement.id);
+        if (item) {
+          // Create a small temporary canvas for the furniture item
+          const itemCanvas = document.createElement('canvas');
+          itemCanvas.width = 60;
+          itemCanvas.height = 50;
+          drawFurniture2D(itemCanvas, item);
+          // Draw it at the placement position
+          ctx.drawImage(itemCanvas, placement.x - 30, placement.y - 25);
+        }
+      });
+    }
+
+    // 3D Isometric location view - uses furniture drawing functions
+    function drawLocation3D(canvas, loc, rotation = 0, zoom = 1) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Sky/background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      if (loc.id === 'park') {
+        bgGrad.addColorStop(0, '#87ceeb');
+        bgGrad.addColorStop(1, '#b3e0ff');
+      } else {
+        bgGrad.addColorStop(0, '#f5f5f5');
+        bgGrad.addColorStop(1, '#e0e0e0');
+      }
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      const isoAngle = Math.PI / 6;
+      const scale = 0.55 * zoom;
+      const originX = w / 2;
+      const originY = h / 2 + 50;
+      const rotRad = rotation * Math.PI / 180;
+
+      // Rotate point around origin in XY plane, then apply isometric
+      function toIso(x, y, z) {
+        // Rotate around center
+        const rx = x * Math.cos(rotRad) - y * Math.sin(rotRad);
+        const ry = x * Math.sin(rotRad) + y * Math.cos(rotRad);
+        return {
+          x: originX + (rx - ry) * Math.cos(isoAngle) * scale,
+          y: originY + (rx + ry) * Math.sin(isoAngle) * scale - z * scale
+        };
+      }
+
+      // Draw wall with visibility check based on rotation
+      function drawWall(bx, by, bz, bw, bd, bh, topColor, leftColor, rightColor, side) {
+        // Determine wall visibility based on rotation
+        const normRot = ((rotation % 360) + 360) % 360;
+
+        // Skip walls that face away from viewer based on rotation
+        if (side === 'back' && normRot > 90 && normRot < 270) return;
+        if (side === 'left' && normRot > 180 && normRot < 360) return;
+        if (side === 'front' && (normRot < 90 || normRot > 270)) return;
+        if (side === 'right' && normRot > 0 && normRot < 180) return;
+
+        const t1 = toIso(bx, by, bz + bh);
+        const t2 = toIso(bx + bw, by, bz + bh);
+        const t3 = toIso(bx + bw, by + bd, bz + bh);
+        const t4 = toIso(bx, by + bd, bz + bh);
+        const l1 = toIso(bx, by + bd, bz);
+        const l2 = toIso(bx, by + bd, bz + bh);
+        const l4 = toIso(bx + bw, by + bd, bz);
+        const r1 = toIso(bx + bw, by, bz);
+        const r2 = toIso(bx + bw, by, bz + bh);
+        const r4 = toIso(bx + bw, by + bd, bz);
+
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(t1.x, t1.y); ctx.lineTo(t2.x, t2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(t4.x, t4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = leftColor;
+        ctx.beginPath();
+        ctx.moveTo(l1.x, l1.y); ctx.lineTo(l2.x, l2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(l4.x, l4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = rightColor;
+        ctx.beginPath();
+        ctx.moveTo(r1.x, r1.y); ctx.lineTo(r2.x, r2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(r4.x, r4.y);
+        ctx.closePath(); ctx.fill();
+      }
+
+      function drawIsoBox(bx, by, bz, bw, bd, bh, topColor, leftColor, rightColor) {
+        const t1 = toIso(bx, by, bz + bh);
+        const t2 = toIso(bx + bw, by, bz + bh);
+        const t3 = toIso(bx + bw, by + bd, bz + bh);
+        const t4 = toIso(bx, by + bd, bz + bh);
+        const l1 = toIso(bx, by + bd, bz);
+        const l2 = toIso(bx, by + bd, bz + bh);
+        const l4 = toIso(bx + bw, by + bd, bz);
+        const r1 = toIso(bx + bw, by, bz);
+        const r2 = toIso(bx + bw, by, bz + bh);
+        const r4 = toIso(bx + bw, by + bd, bz);
+
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(t1.x, t1.y); ctx.lineTo(t2.x, t2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(t4.x, t4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = leftColor;
+        ctx.beginPath();
+        ctx.moveTo(l1.x, l1.y); ctx.lineTo(l2.x, l2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(l4.x, l4.y);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = rightColor;
+        ctx.beginPath();
+        ctx.moveTo(r1.x, r1.y); ctx.lineTo(r2.x, r2.y); ctx.lineTo(t3.x, t3.y); ctx.lineTo(r4.x, r4.y);
+        ctx.closePath(); ctx.fill();
+      }
+
+      // Draw floor
+      const floorW = 180, floorD = 180; // Square floor
+      drawIsoBox(-floorW/2, -floorD/2, 0, floorW, floorD, 3, loc.colors.floor,
+        darkenColor(loc.colors.floor, 30), darkenColor(loc.colors.floor, 15));
+
+      // Walls for indoor locations (all 4 walls, with visibility culling)
+      if (loc.id !== 'park') {
+        const wallH = 70;
+        const wallT = 5;
+        // Back wall (north)
+        drawWall(-floorW/2, -floorD/2, 3, floorW, wallT, wallH, loc.colors.wall,
+          darkenColor(loc.colors.wall, 20), loc.colors.wall, 'back');
+        // Left wall (west)
+        drawWall(-floorW/2, -floorD/2, 3, wallT, floorD, wallH, loc.colors.wall,
+          loc.colors.wall, darkenColor(loc.colors.wall, 30), 'left');
+        // Front wall (south) - usually hidden
+        drawWall(-floorW/2, floorD/2 - wallT, 3, floorW, wallT, wallH, loc.colors.wall,
+          darkenColor(loc.colors.wall, 20), loc.colors.wall, 'front');
+        // Right wall (east)
+        drawWall(floorW/2 - wallT, -floorD/2, 3, wallT, floorD, wallH, loc.colors.wall,
+          loc.colors.wall, darkenColor(loc.colors.wall, 30), 'right');
+      }
+
+      // Draw furniture using warehouse items via 3D rendering
+      // Convert 2D positions to isometric positions
+      const layout = locationLayouts[loc.id] || [];
+      layout.forEach(placement => {
+        const item = getFurnitureItem(placement.id);
+        if (item) {
+          // Create temporary canvas for furniture with transparent background
+          const itemCanvas = document.createElement('canvas');
+          itemCanvas.width = 70;
+          itemCanvas.height = 60;
+          drawFurniture3D(itemCanvas, item, true); // true = skip background for compositing
+
+          // Map 2D position to isometric position - adjusted for proper floor placement
+          const isoX = (placement.x - 140) * 0.8;
+          const isoY = (placement.y - 90) * 0.8;
+          const screenPos = toIso(isoX, isoY, 3);
+
+          // Draw furniture at the transformed position (position rotates with room)
+          ctx.save();
+          ctx.translate(screenPos.x - 35, screenPos.y - 25);
+          ctx.scale(zoom, zoom);
+          ctx.drawImage(itemCanvas, 0, 0);
+          ctx.restore();
+        }
+      });
+
+      // Draw rotation hint text
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Drag to rotate', w / 2, h - 10);
+    }
+
+    // Helper to get furniture item from warehouse data
+    function getFurnitureItem(itemId) {
+      if (!furnitureData) return null;
+      for (const cat of Object.values(furnitureData.categories)) {
+        const item = cat.items.find(i => i.id === itemId);
+        if (item) return item;
+      }
+      return null;
+    }
+
+    function darkenColor(hex, amt) {
+      const num = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, (num >> 16) - amt);
+      const g = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+      const b = Math.max(0, (num & 0x0000FF) - amt);
+      return `rgb(${r},${g},${b})`;
+    }
+
+    async function loadFurniture() {
+      try {
+        const res = await fetch('/data/furniture.json');
+        furnitureData = await res.json();
+        renderFurniture();
+      } catch (err) {
+        console.error('Failed to load furniture:', err);
+        document.getElementById('furniture-grid').innerHTML =
+          '<p class="text-red-500">Failed to load furniture data</p>';
+      }
+    }
+
+    function renderFurniture() {
+      const grid = document.getElementById('furniture-grid');
+      let html = '';
+
+      for (const [catId, cat] of Object.entries(furnitureData.categories)) {
+        html += `<div class="mb-8">
+          <h3 class="text-lg font-semibold mb-3">${cat.icon} ${cat.name}</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            ${cat.items.map(item => `
+              <div class="bg-white rounded-lg shadow p-3 hover:shadow-lg transition-shadow cursor-pointer" onclick="openFurnitureViewer('${item.id}')">
+                <canvas id="canvas-${item.id}" width="120" height="80" class="w-full bg-gray-50 rounded mb-2"></canvas>
+                <div class="font-medium text-gray-800 text-sm">${item.name}</div>
+                <div class="text-xs text-gray-500 mt-1 line-clamp-2">${item.description}</div>
+                <div class="text-xs text-gray-400 mt-1">${item.size.w}x${item.size.h}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+      }
+      grid.innerHTML = html;
+
+      // Draw all items after DOM is updated
+      requestAnimationFrame(() => {
+        for (const [catId, cat] of Object.entries(furnitureData.categories)) {
+          cat.items.forEach(item => {
+            const canvas = document.getElementById('canvas-' + item.id);
+            if (canvas) {
+              if (furnitureView === '3d') {
+                drawFurniture3D(canvas, item);
+              } else {
+                drawFurniture2D(canvas, item);
+              }
+            }
+          });
+        }
+      });
+    }
+
+    // 2D Top-down view drawing
+    function drawFurniture2D(canvas, item) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Scale to fit canvas with padding
+      const scale = Math.min((w - 20) / item.size.w, (h - 20) / item.size.h, 1.5);
+      const drawW = item.size.w * scale;
+      const drawH = item.size.h * scale;
+      const x = (w - drawW) / 2;
+      const y = (h - drawH) / 2;
+
+      // Draw based on item type
+      switch (item.id) {
+        case 'hospital_bed':
+          ctx.fillStyle = '#c0c0c0';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#e8f4f8';
+          ctx.fillRect(x + 4, y + 4, drawW - 8, drawH - 8);
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(x + drawW - 20, y + 6, 14, 12);
+          break;
+        case 'nurse_station':
+          ctx.fillStyle = '#2c5f7c';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#1a4a5e';
+          ctx.fillRect(x + 5, y + 5, drawW - 10, drawH - 10);
+          ctx.fillStyle = '#4a9';
+          ctx.fillRect(x + 10, y + 10, 20, 15);
+          ctx.fillRect(x + 35, y + 10, 20, 15);
+          break;
+        case 'conference_table':
+          ctx.fillStyle = '#2d3748';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#1a202c';
+          ctx.fillRect(x + 5, y + 5, drawW - 10, drawH - 10);
+          break;
+        case 'office_chair':
+          ctx.fillStyle = '#1a202c';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + drawH/2, Math.min(drawW, drawH)/2 - 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#2d3748';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + drawH/2, Math.min(drawW, drawH)/3, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'bookshelf':
+          ctx.fillStyle = '#5d4037';
+          ctx.fillRect(x, y, drawW, drawH);
+          const bookColors = ['#c62828', '#1565c0', '#2e7d32', '#f9a825', '#6a1b9a'];
+          for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 5; col++) {
+              ctx.fillStyle = bookColors[(row + col) % bookColors.length];
+              ctx.fillRect(x + 4 + col * 12, y + 4 + row * 28, 10, 24);
+            }
+          }
+          break;
+        case 'reading_table':
+          ctx.fillStyle = '#5d4037';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#ffd700';
+          ctx.beginPath();
+          ctx.arc(x + drawW - 15, y + 15, 8, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'blackboard':
+          ctx.fillStyle = '#2d5016';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.strokeStyle = '#8b4513';
+          ctx.lineWidth = 4;
+          ctx.strokeRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('ABC', x + drawW/2, y + drawH/2 + 4);
+          break;
+        case 'teacher_desk':
+        case 'student_desk':
+        case 'desk':
+          ctx.fillStyle = '#a0522d';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#d2691e';
+          ctx.fillRect(x + 3, y + 3, drawW - 6, drawH - 6);
+          break;
+        case 'cafe_counter':
+          ctx.fillStyle = '#3e2723';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#5d4037';
+          ctx.fillRect(x, y + drawH - 8, drawW, 8);
+          break;
+        case 'cafe_table':
+          ctx.fillStyle = '#5d4037';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + drawH/2, Math.min(drawW, drawH)/2 - 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#8d6e63';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + drawH/2, Math.min(drawW, drawH)/2 - 6, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'tree':
+          ctx.fillStyle = '#5d4037';
+          ctx.fillRect(x + drawW/2 - 5, y + drawH - 25, 10, 25);
+          ctx.fillStyle = '#2e7d32';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + 20, 20, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#388e3c';
+          ctx.beginPath();
+          ctx.arc(x + drawW/2 - 10, y + 28, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + drawW/2 + 10, y + 28, 15, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case 'bench':
+          ctx.fillStyle = '#4e342e';
+          ctx.fillRect(x + 5, y + drawH - 10, 5, 10);
+          ctx.fillRect(x + drawW - 10, y + drawH - 10, 5, 10);
+          ctx.fillStyle = '#6d4c41';
+          ctx.fillRect(x, y + drawH - 18, drawW, 10);
+          break;
+        case 'wheelchair':
+          ctx.strokeStyle = '#555';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x + drawW/3, y + drawH/2 + 5, 15, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x + drawW - 15, y + drawH - 12, 6, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = '#333';
+          ctx.fillRect(x + 8, y + drawH/2 - 8, 25, 6);
+          break;
+        case 'iv_stand':
+          ctx.strokeStyle = '#888';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x + drawW/2, y + 10);
+          ctx.lineTo(x + drawW/2, y + drawH - 10);
+          ctx.stroke();
+          ctx.fillStyle = '#87ceeb';
+          ctx.fillRect(x + drawW/2 - 8, y + 5, 16, 20);
+          ctx.beginPath();
+          ctx.arc(x + drawW/2, y + drawH - 5, 8, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        case 'coffee_machine':
+          ctx.fillStyle = '#212121';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#b71c1c';
+          ctx.fillRect(x + 8, y + 8, 15, 10);
+          ctx.fillStyle = '#555';
+          ctx.fillRect(x + drawW/2 - 10, y + drawH - 20, 20, 15);
+          break;
+        case 'window':
+          ctx.fillStyle = '#87ceeb';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x, y, drawW, drawH);
+          ctx.beginPath();
+          ctx.moveTo(x + drawW/2, y);
+          ctx.lineTo(x + drawW/2, y + drawH);
+          ctx.moveTo(x, y + drawH/2);
+          ctx.lineTo(x + drawW, y + drawH/2);
+          ctx.stroke();
+          break;
+        case 'door':
+          ctx.fillStyle = '#8b4513';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#ffd700';
+          ctx.beginPath();
+          ctx.arc(x + drawW - 12, y + drawH/2, 4, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        default:
+          // Generic rectangle
+          ctx.fillStyle = '#888';
+          ctx.fillRect(x, y, drawW, drawH);
+          ctx.fillStyle = '#aaa';
+          ctx.fillRect(x + 3, y + 3, drawW - 6, drawH - 6);
+      }
+    }
+
+    // 3D Isometric view drawing - Enhanced with gradients and curves
+    // skipBackground: true to draw with transparent background (for compositing)
+    function drawFurniture3D(canvas, item, skipBackground = false) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Soft background gradient (skip when compositing onto locations)
+      if (!skipBackground) {
+        const bgGrad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2);
+        bgGrad.addColorStop(0, '#f8f9fa');
+        bgGrad.addColorStop(1, '#e9ecef');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      const isoAngle = Math.PI / 6;
+      const scale = Math.min(w / (item.size.w + 40), h / (item.size.h + 40), 0.8);
+
+      function toIso(x, y, z) {
+        return {
+          x: w/2 + (x - y) * Math.cos(isoAngle) * scale,
+          y: h/2 + (x + y) * Math.sin(isoAngle) * scale - z * scale
+        };
+      }
+
+      // Draw isometric box with gradient shading
+      function drawIsoBox(bx, by, bz, bw, bd, bh, baseColor, opts = {}) {
+        const darken = (color, amt) => {
+          const num = parseInt(color.slice(1), 16);
+          const r = Math.max(0, (num >> 16) - amt);
+          const g = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+          const b = Math.max(0, (num & 0x0000FF) - amt);
+          return `rgb(${r},${g},${b})`;
+        };
+        const lighten = (color, amt) => {
+          const num = parseInt(color.slice(1), 16);
+          const r = Math.min(255, (num >> 16) + amt);
+          const g = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+          const b = Math.min(255, (num & 0x0000FF) + amt);
+          return `rgb(${r},${g},${b})`;
+        };
+
+        const t1 = toIso(bx, by, bz + bh);
+        const t2 = toIso(bx + bw, by, bz + bh);
+        const t3 = toIso(bx + bw, by + bd, bz + bh);
+        const t4 = toIso(bx, by + bd, bz + bh);
+        const l1 = toIso(bx, by + bd, bz);
+        const l2 = toIso(bx, by + bd, bz + bh);
+        const l3 = toIso(bx + bw, by + bd, bz + bh);
+        const l4 = toIso(bx + bw, by + bd, bz);
+        const r1 = toIso(bx + bw, by, bz);
+        const r2 = toIso(bx + bw, by, bz + bh);
+        const r3 = toIso(bx + bw, by + bd, bz + bh);
+        const r4 = toIso(bx + bw, by + bd, bz);
+
+        // Top face with gradient
+        const topGrad = ctx.createLinearGradient(t1.x, t1.y, t3.x, t3.y);
+        topGrad.addColorStop(0, lighten(baseColor, 30));
+        topGrad.addColorStop(1, baseColor);
+        ctx.fillStyle = topGrad;
+        ctx.beginPath();
+        ctx.moveTo(t1.x, t1.y);
+        ctx.lineTo(t2.x, t2.y);
+        ctx.lineTo(t3.x, t3.y);
+        ctx.lineTo(t4.x, t4.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Left face (darker)
+        const leftGrad = ctx.createLinearGradient(l1.x, l1.y, l3.x, l3.y);
+        leftGrad.addColorStop(0, darken(baseColor, 40));
+        leftGrad.addColorStop(1, darken(baseColor, 60));
+        ctx.fillStyle = leftGrad;
+        ctx.beginPath();
+        ctx.moveTo(l1.x, l1.y);
+        ctx.lineTo(l2.x, l2.y);
+        ctx.lineTo(l3.x, l3.y);
+        ctx.lineTo(l4.x, l4.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right face (medium shade)
+        const rightGrad = ctx.createLinearGradient(r1.x, r1.y, r2.x, r2.y);
+        rightGrad.addColorStop(0, darken(baseColor, 20));
+        rightGrad.addColorStop(1, darken(baseColor, 35));
+        ctx.fillStyle = rightGrad;
+        ctx.beginPath();
+        ctx.moveTo(r1.x, r1.y);
+        ctx.lineTo(r2.x, r2.y);
+        ctx.lineTo(r3.x, r3.y);
+        ctx.lineTo(r4.x, r4.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Optional edge highlight
+        if (opts.highlight) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(t1.x, t1.y);
+          ctx.lineTo(t2.x, t2.y);
+          ctx.stroke();
+        }
+      }
+
+      // Draw isometric cylinder
+      function drawIsoCylinder(cx, cy, cz, radius, height, baseColor) {
+        const darken = (color, amt) => {
+          const num = parseInt(color.slice(1), 16);
+          const r = Math.max(0, (num >> 16) - amt);
+          const g = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+          const b = Math.max(0, (num & 0x0000FF) - amt);
+          return `rgb(${r},${g},${b})`;
+        };
+
+        const top = toIso(cx, cy, cz + height);
+        const bottom = toIso(cx, cy, cz);
+
+        // Body gradient
+        const bodyGrad = ctx.createLinearGradient(
+          top.x - radius * scale, top.y,
+          top.x + radius * scale, top.y
+        );
+        bodyGrad.addColorStop(0, darken(baseColor, 40));
+        bodyGrad.addColorStop(0.3, baseColor);
+        bodyGrad.addColorStop(0.7, baseColor);
+        bodyGrad.addColorStop(1, darken(baseColor, 50));
+
+        // Draw body
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.ellipse(bottom.x, bottom.y, radius * scale, radius * scale * 0.5, 0, 0, Math.PI);
+        ctx.lineTo(top.x - radius * scale, top.y);
+        ctx.ellipse(top.x, top.y, radius * scale, radius * scale * 0.5, 0, Math.PI, 0, true);
+        ctx.closePath();
+        ctx.fill();
+
+        // Top ellipse
+        const topGrad = ctx.createRadialGradient(
+          top.x - radius * 0.3 * scale, top.y - radius * 0.1 * scale, 0,
+          top.x, top.y, radius * scale
+        );
+        topGrad.addColorStop(0, '#fff');
+        topGrad.addColorStop(0.3, baseColor);
+        topGrad.addColorStop(1, darken(baseColor, 20));
+
+        ctx.fillStyle = topGrad;
+        ctx.beginPath();
+        ctx.ellipse(top.x, top.y, radius * scale, radius * scale * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw sphere/ellipsoid for foliage
+      function drawSphere(cx, cy, cz, radius, baseColor) {
+        const center = toIso(cx, cy, cz);
+        const grad = ctx.createRadialGradient(
+          center.x - radius * 0.3 * scale, center.y - radius * 0.3 * scale, 0,
+          center.x, center.y, radius * scale
+        );
+        grad.addColorStop(0, '#90EE90');
+        grad.addColorStop(0.4, baseColor);
+        grad.addColorStop(1, '#1a5f1a');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, radius * scale, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const sw = item.size.w * 0.4;
+      const sd = item.size.h * 0.4;
+      const sh = Math.max(sw, sd) * 0.5;
+
+      switch (item.id) {
+        case 'hospital_bed':
+          // Frame with chrome finish
+          drawIsoBox(-sw/2, -sd/2, 0, sw, sd, sh * 0.25, '#b8c4ce', {highlight: true});
+          // Head/foot rails
+          drawIsoBox(-sw/2, -sd/2, sh * 0.25, 3, sd, sh * 0.4, '#9aa8b4');
+          drawIsoBox(sw/2 - 3, -sd/2, sh * 0.25, 3, sd, sh * 0.3, '#9aa8b4');
+          // Mattress with soft blue
+          drawIsoBox(-sw/2 + 4, -sd/2 + 3, sh * 0.25, sw - 8, sd - 6, sh * 0.18, '#e3f2fd');
+          // Pillow - rounded look via multiple boxes
+          drawIsoBox(sw/2 - 14, -sd/2 + 5, sh * 0.43, 10, 6, 3, '#ffffff');
+          drawIsoBox(sw/2 - 13, -sd/2 + 6, sh * 0.46, 8, 4, 2, '#f5f5f5');
+          // Blanket fold
+          drawIsoBox(-sw/2 + 6, -sd/2 + 4, sh * 0.43, sw * 0.5, sd - 8, 2, '#bbdefb');
+          break;
+
+        case 'nurse_station':
+          // Main counter - modern white/grey
+          drawIsoBox(-sw/2, -sd/2, 0, sw, sd, sh * 0.5, '#eceff1', {highlight: true});
+          // Desktop surface
+          drawIsoBox(-sw/2 + 2, -sd/2 + 2, sh * 0.5, sw - 4, sd - 4, 2, '#37474f');
+          // Computer monitor
+          drawIsoBox(-sw/4, -sd/3, sh * 0.52, 12, 2, 10, '#263238');
+          drawIsoBox(-sw/4 + 1, -sd/3 + 0.5, sh * 0.53, 10, 1, 8, '#4fc3f7');
+          // Keyboard
+          drawIsoBox(-sw/4 - 5, -sd/3 + 5, sh * 0.52, 15, 5, 1, '#455a64');
+          // Medical supplies on side
+          drawIsoBox(sw/4, -sd/3, sh * 0.52, 8, 6, 4, '#e53935');
+          break;
+
+        case 'conference_table':
+          // Elegant dark wood table
+          drawIsoBox(-sw/2, -sd/2, sh * 0.3, sw, sd, 4, '#3e2723', {highlight: true});
+          // Table legs (4 corners)
+          drawIsoBox(-sw/2 + 3, -sd/2 + 3, 0, 4, 4, sh * 0.3, '#5d4037');
+          drawIsoBox(sw/2 - 7, -sd/2 + 3, 0, 4, 4, sh * 0.3, '#5d4037');
+          drawIsoBox(-sw/2 + 3, sd/2 - 7, 0, 4, 4, sh * 0.3, '#5d4037');
+          drawIsoBox(sw/2 - 7, sd/2 - 7, 0, 4, 4, sh * 0.3, '#5d4037');
+          // Papers/documents on table
+          drawIsoBox(-5, -8, sh * 0.34, 10, 12, 0.5, '#ffffff');
+          drawIsoBox(8, -5, sh * 0.34, 8, 10, 0.5, '#fff9c4');
+          break;
+
+        case 'office_chair':
+          // Modern ergonomic office chair with proper 5-point base
+
+          // 5-point star base
+          const chairBaseAngles = [0, 72, 144, 216, 288].map(d => d * Math.PI / 180);
+          const chairBaseRadius = 10;
+          chairBaseAngles.forEach(angle => {
+            const lx = Math.cos(angle) * chairBaseRadius;
+            const ly = Math.sin(angle) * chairBaseRadius;
+            // Star arm
+            drawIsoBox(Math.min(0, lx), Math.min(0, ly), 0, Math.abs(lx) + 2, Math.abs(ly) + 2, 2, '#37474f');
+            // Caster wheel at end
+            const wheelPos = toIso(lx, ly, 0);
+            ctx.fillStyle = '#263238';
+            ctx.beginPath();
+            ctx.ellipse(wheelPos.x, wheelPos.y, 2.5 * scale, 3.5 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Central hub
+          drawIsoCylinder(0, 0, 1, 4, 2, '#455a64');
+
+          // Gas lift cylinder
+          drawIsoCylinder(0, 0, 3, 2, 11, '#546e7a');
+
+          // Seat base plate
+          drawIsoBox(-9, -7, 14, 18, 14, 2, '#37474f');
+
+          // Seat cushion (contoured)
+          drawIsoBox(-8, -6, 16, 16, 12, 4, '#1565c0', {highlight: true});
+          // Seat front curve suggestion
+          drawIsoBox(-6, -5, 16, 12, 3, 5, '#1976d2');
+
+          // Backrest frame
+          drawIsoBox(-8, -9, 20, 2, 10, 2, '#455a64');
+
+          // Backrest - curved mesh effect
+          drawIsoBox(-9, -10, 22, 3, 12, 5, '#1976d2');
+          drawIsoBox(-10, -10, 27, 3, 12, 7, '#1e88e5');
+          drawIsoBox(-10, -9, 34, 3, 10, 5, '#2196f3');
+          // Lumbar support bulge
+          drawIsoBox(-9, -8, 26, 2, 8, 4, '#0d47a1');
+
+          // Headrest (optional on ergonomic chairs)
+          drawIsoBox(-11, -7, 39, 3, 6, 5, '#1565c0');
+
+          // Armrests with proper structure
+          // Left armrest
+          drawIsoBox(-10, -8, 20, 2, 2, 5, '#37474f'); // Vertical support
+          drawIsoBox(-10, -8, 25, 12, 3, 2, '#263238'); // Horizontal arm
+          drawIsoBox(-2, -8, 25, 6, 3, 1, '#455a64');   // Arm pad
+          // Right armrest
+          drawIsoBox(-10, 6, 20, 2, 2, 5, '#37474f');
+          drawIsoBox(-10, 5, 25, 12, 3, 2, '#263238');
+          drawIsoBox(-2, 5, 25, 6, 3, 1, '#455a64');
+          break;
+
+        case 'bookshelf':
+          // Rich wooden bookshelf
+          drawIsoBox(-sw/2, -sd/2, 0, sw, sd, sh, '#4e342e', {highlight: true});
+          // Shelves
+          for (let i = 1; i < 4; i++) {
+            drawIsoBox(-sw/2 + 1, -sd/2 + 1, i * (sh/4), sw - 2, sd - 2, 2, '#6d4c41');
+          }
+          // Colorful books - varied heights
+          const bookPalette = ['#d32f2f', '#1976d2', '#388e3c', '#f57c00', '#7b1fa2', '#00796b'];
+          for (let shelf = 0; shelf < 3; shelf++) {
+            let bx = -sw/2 + 4;
+            for (let b = 0; b < 5; b++) {
+              const bh = 6 + Math.random() * 4;
+              const bw = 3 + Math.random() * 2;
+              const color = bookPalette[(shelf + b) % bookPalette.length];
+              drawIsoBox(bx, -sd/2 + 3, (shelf + 1) * (sh/4) + 2, bw, sd - 6, bh, color);
+              bx += bw + 1;
+            }
+          }
+          break;
+
+        case 'reading_table':
+          // Warm wood reading table
+          drawIsoBox(-sw/2, -sd/2, sh * 0.35, sw, sd, 3, '#8d6e63', {highlight: true});
+          // Legs
+          drawIsoBox(-sw/2 + 2, -sd/2 + 2, 0, 3, 3, sh * 0.35, '#6d4c41');
+          drawIsoBox(sw/2 - 5, -sd/2 + 2, 0, 3, 3, sh * 0.35, '#6d4c41');
+          drawIsoBox(-sw/2 + 2, sd/2 - 5, 0, 3, 3, sh * 0.35, '#6d4c41');
+          drawIsoBox(sw/2 - 5, sd/2 - 5, 0, 3, 3, sh * 0.35, '#6d4c41');
+          // Desk lamp
+          drawIsoCylinder(sw/3, -sd/3, sh * 0.38, 3, 2, '#ffd54f');
+          drawIsoBox(sw/3 - 1, -sd/3 - 1, sh * 0.4, 2, 2, 8, '#37474f');
+          drawIsoBox(sw/3 - 4, -sd/3 - 3, sh * 0.48, 8, 6, 2, '#ffeb3b');
+          // Open book
+          drawIsoBox(-sw/4, 0, sh * 0.38, 12, 8, 1, '#fff8e1');
+          break;
+
+        case 'blackboard':
+          // Classic green chalkboard
+          drawIsoBox(-sw/2, -2, 0, sw, 4, sh, '#1b5e20', {highlight: true});
+          // Wooden frame
+          drawIsoBox(-sw/2 - 2, -3, -1, 4, 5, sh + 2, '#5d4037');
+          drawIsoBox(sw/2 - 2, -3, -1, 4, 5, sh + 2, '#5d4037');
+          drawIsoBox(-sw/2, -3, sh, sw, 5, 3, '#5d4037');
+          drawIsoBox(-sw/2, -3, -1, sw, 5, 3, '#5d4037');
+          // Chalk tray
+          drawIsoBox(-sw/3, 0, -2, sw * 0.6, 3, 2, '#8d6e63');
+          // Chalk writing suggestion (light marks)
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          const center = toIso(0, 0, sh * 0.6);
+          ctx.font = '8px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('ABC', center.x, center.y);
+          break;
+
+        case 'teacher_desk':
+        case 'student_desk':
+        case 'desk':
+          // Classic wooden desk
+          drawIsoBox(-sw/2, -sd/2, sh * 0.4, sw, sd, 3, '#a1887f', {highlight: true});
+          // Drawer section
+          drawIsoBox(-sw/2 + 2, -sd/2 + 2, 0, sw * 0.3, sd - 4, sh * 0.38, '#8d6e63');
+          // Drawer handle
+          drawIsoBox(-sw/2 + 8, -sd/4, sh * 0.2, 6, 2, 1, '#ffd54f');
+          // Legs
+          drawIsoBox(sw/2 - 5, -sd/2 + 2, 0, 3, 3, sh * 0.4, '#6d4c41');
+          drawIsoBox(sw/2 - 5, sd/2 - 5, 0, 3, 3, sh * 0.4, '#6d4c41');
+          break;
+
+        case 'cafe_counter':
+          // Modern espresso bar counter
+          drawIsoBox(-sw/2, -sd/2, 0, sw, sd, sh * 0.6, '#3e2723', {highlight: true});
+          // Counter top - marble effect
+          drawIsoBox(-sw/2, -sd/2, sh * 0.6, sw, sd, 3, '#eceff1');
+          // Display case
+          drawIsoBox(-sw/4, -sd/2 + 2, sh * 0.63, sw * 0.4, sd * 0.6, sh * 0.25, '#81d4fa');
+          // Pastries inside
+          drawIsoBox(-sw/4 + 4, -sd/4, sh * 0.65, 6, 4, 3, '#ffcc80');
+          drawIsoBox(-sw/4 + 12, -sd/4, sh * 0.65, 5, 4, 4, '#a1887f');
+          break;
+
+        case 'cafe_table':
+          // Elegant bistro table with pedestal
+          drawIsoCylinder(0, 0, 0, 5, 3, '#5d4037');
+          drawIsoCylinder(0, 0, 3, 2, 15, '#6d4c41');
+          // Round tabletop
+          const tableCenter = toIso(0, 0, 18);
+          const tableGrad = ctx.createRadialGradient(
+            tableCenter.x - 5, tableCenter.y - 3, 0,
+            tableCenter.x, tableCenter.y, 20
+          );
+          tableGrad.addColorStop(0, '#a1887f');
+          tableGrad.addColorStop(1, '#6d4c41');
+          ctx.fillStyle = tableGrad;
+          ctx.beginPath();
+          ctx.ellipse(tableCenter.x, tableCenter.y, 18, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Coffee cup
+          drawIsoCylinder(5, -3, 18, 3, 4, '#ffffff');
+          // Saucer
+          const saucerPos = toIso(5, -3, 18);
+          ctx.fillStyle = '#e0e0e0';
+          ctx.beginPath();
+          ctx.ellipse(saucerPos.x, saucerPos.y + 2, 5, 2.5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case 'coffee_machine':
+          // Professional espresso machine
+          drawIsoBox(-10, -8, 0, 20, 16, 22, '#212121', {highlight: true});
+          // Chrome top
+          drawIsoBox(-10, -8, 22, 20, 16, 2, '#9e9e9e');
+          // Group heads
+          drawIsoCylinder(-3, -2, 10, 3, 4, '#757575');
+          drawIsoCylinder(3, -2, 10, 3, 4, '#757575');
+          // Drip tray
+          drawIsoBox(-8, -6, 0, 16, 12, 2, '#424242');
+          // Control panel
+          drawIsoBox(-8, -9, 14, 16, 2, 6, '#37474f');
+          // Buttons
+          drawIsoBox(-5, -9.5, 16, 2, 1, 2, '#f44336');
+          drawIsoBox(0, -9.5, 16, 2, 1, 2, '#4caf50');
+          drawIsoBox(5, -9.5, 16, 2, 1, 2, '#2196f3');
+          // Steam wand
+          drawIsoCylinder(8, 2, 8, 1, 10, '#bdbdbd');
+          break;
+
+        case 'tree':
+          // Natural tree with trunk and layered foliage
+
+          // Trunk base (wider at bottom)
+          drawIsoCylinder(0, 0, 0, 5, 4, '#4e342e');
+          // Main trunk
+          drawIsoCylinder(0, 0, 4, 4, 16, '#5d4037');
+          // Upper trunk (narrower)
+          drawIsoCylinder(0, 0, 18, 3, 6, '#6d4c41');
+
+          // Branch hints
+          drawIsoBox(-3, -2, 14, 6, 2, 2, '#5d4037');
+          drawIsoBox(1, 2, 16, 5, 2, 2, '#5d4037');
+
+          // Foliage layers (bottom to top, larger at bottom)
+          // Base foliage layer
+          drawSphere(-4, -3, 20, 11, '#2e7d32');
+          drawSphere(4, -2, 21, 10, '#388e3c');
+          drawSphere(-2, 5, 19, 10, '#33691e');
+          drawSphere(3, 4, 20, 9, '#43a047');
+
+          // Middle foliage layer
+          drawSphere(-3, -1, 27, 9, '#388e3c');
+          drawSphere(2, 0, 28, 8, '#43a047');
+          drawSphere(0, 3, 26, 8, '#4caf50');
+
+          // Top foliage (smaller, lighter)
+          drawSphere(-1, -1, 33, 7, '#4caf50');
+          drawSphere(1, 1, 35, 5, '#66bb6a');
+          drawSphere(0, 0, 38, 4, '#81c784');
+          break;
+
+        case 'bench':
+          // Classic park bench with cast iron frame and wood slats
+
+          // Cast iron leg frames (decorative style)
+          // Left leg frame
+          drawIsoBox(-sw/2 + 2, -2, 0, 3, 4, 14, '#37474f');
+          drawIsoBox(-sw/2 + 2, -4, 12, 3, 8, 2, '#455a64');
+          // Decorative curve suggestion (small blocks)
+          drawIsoBox(-sw/2 + 2, -1, 4, 2, 2, 2, '#546e7a');
+          drawIsoBox(-sw/2 + 2, 1, 6, 2, 2, 2, '#546e7a');
+
+          // Right leg frame
+          drawIsoBox(sw/2 - 5, -2, 0, 3, 4, 14, '#37474f');
+          drawIsoBox(sw/2 - 5, -4, 12, 3, 8, 2, '#455a64');
+          drawIsoBox(sw/2 - 5, -1, 4, 2, 2, 2, '#546e7a');
+          drawIsoBox(sw/2 - 5, 1, 6, 2, 2, 2, '#546e7a');
+
+          // Wood seat slats (5 slats with gaps)
+          const slatColors = ['#8d6e63', '#7d5f54', '#8d6e63', '#7d5f54', '#8d6e63'];
+          for (let i = 0; i < 5; i++) {
+            drawIsoBox(-sw/2 + 1, -3 + i * 2.2, 14, sw - 2, 1.8, 1.5, slatColors[i], {highlight: true});
+          }
+
+          // Wood back slats (4 slats)
+          drawIsoBox(-sw/2 + 1, -5, 16, sw - 2, 1.5, 3, '#8d6e63');
+          drawIsoBox(-sw/2 + 1, -5, 20, sw - 2, 1.5, 3, '#7d5f54');
+          drawIsoBox(-sw/2 + 1, -5, 24, sw - 2, 1.5, 3, '#8d6e63');
+          drawIsoBox(-sw/2 + 1, -5, 28, sw - 2, 1.5, 2, '#7d5f54');
+
+          // Back support posts (connect to legs)
+          drawIsoBox(-sw/2 + 2, -5, 14, 3, 2, 18, '#37474f');
+          drawIsoBox(sw/2 - 5, -5, 14, 3, 2, 18, '#37474f');
+          break;
+
+        case 'wheelchair':
+          // Modern wheelchair - improved proportions and structure
+
+          // Draw isometric wheel helper
+          function drawIsoWheel(cx, cy, cz, radius, thickness) {
+            const center = toIso(cx, cy, cz);
+            // Draw wheel as ellipse for proper isometric view
+            ctx.strokeStyle = '#37474f';
+            ctx.lineWidth = thickness;
+            ctx.beginPath();
+            // Ellipse tilted for isometric - wheel faces sideways
+            ctx.ellipse(center.x, center.y, radius * scale * 0.6, radius * scale, 0, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Wheel hub
+            ctx.fillStyle = '#546e7a';
+            ctx.beginPath();
+            ctx.ellipse(center.x, center.y, 3 * scale, 4 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Spokes
+            ctx.strokeStyle = '#78909c';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 8; i++) {
+              const angle = i * Math.PI / 4;
+              ctx.beginPath();
+              ctx.moveTo(center.x, center.y);
+              ctx.lineTo(
+                center.x + Math.cos(angle) * radius * scale * 0.55,
+                center.y + Math.sin(angle) * radius * scale * 0.9
+              );
+              ctx.stroke();
+            }
+
+            // Tire rim highlight
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(center.x, center.y, (radius - 1) * scale * 0.6, (radius - 1) * scale, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          // Main frame tubes (chrome)
+          drawIsoBox(-12, -1, 8, 2, 2, 10, '#b0bec5'); // Left vertical frame
+          drawIsoBox(-12, 7, 8, 2, 2, 10, '#b0bec5');  // Right vertical frame
+          drawIsoBox(-12, -1, 6, 18, 2, 2, '#90a4ae'); // Lower horizontal frame
+          drawIsoBox(-12, 7, 6, 18, 2, 2, '#90a4ae');  // Lower horizontal frame (right)
+
+          // Large rear wheels (positioned on sides)
+          drawIsoWheel(-10, -4, 10, 12, 2.5);
+          drawIsoWheel(-10, 10, 10, 12, 2.5);
+
+          // Small front caster wheels
+          const frontWheelL = toIso(8, -2, 4);
+          const frontWheelR = toIso(8, 8, 4);
+          ctx.fillStyle = '#455a64';
+          ctx.beginPath();
+          ctx.ellipse(frontWheelL.x, frontWheelL.y, 3 * scale, 4 * scale, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.ellipse(frontWheelR.x, frontWheelR.y, 3 * scale, 4 * scale, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Caster forks
+          drawIsoBox(6, -3, 4, 2, 2, 6, '#78909c');
+          drawIsoBox(6, 7, 4, 2, 2, 6, '#78909c');
+
+          // Seat cushion (blue upholstery)
+          drawIsoBox(-6, -1, 14, 14, 10, 3, '#1565c0', {highlight: true});
+
+          // Backrest (padded, attached to frame)
+          drawIsoBox(-12, -1, 18, 3, 10, 14, '#1976d2');
+          // Backrest padding detail
+          drawIsoBox(-11, 0, 20, 2, 8, 10, '#1e88e5');
+
+          // Armrests (extending forward from backrest)
+          drawIsoBox(-10, -2, 17, 12, 2, 2, '#0d47a1');
+          drawIsoBox(-10, 8, 17, 12, 2, 2, '#0d47a1');
+          // Armrest pads
+          drawIsoBox(-2, -2, 17, 6, 2, 1, '#263238');
+          drawIsoBox(-2, 8, 17, 6, 2, 1, '#263238');
+
+          // Push handles (behind backrest)
+          drawIsoBox(-14, 0, 30, 2, 2, 6, '#78909c');
+          drawIsoBox(-14, 6, 30, 2, 2, 6, '#78909c');
+          // Handle grips
+          drawIsoBox(-14, 0, 34, 2, 2, 4, '#424242');
+          drawIsoBox(-14, 6, 34, 2, 2, 4, '#424242');
+
+          // Footrest platform
+          drawIsoBox(4, 0, 4, 6, 8, 2, '#455a64');
+          // Footrest frame
+          drawIsoBox(2, 3, 4, 2, 2, 10, '#78909c');
+          break;
+
+        case 'iv_stand':
+          // Medical IV stand - improved with proper 5-point base and hooks
+
+          // 5-point star base legs (spread evenly)
+          const baseAngles = [0, 72, 144, 216, 288].map(d => d * Math.PI / 180);
+          const baseRadius = 7;
+          baseAngles.forEach(angle => {
+            const lx = Math.cos(angle) * baseRadius;
+            const ly = Math.sin(angle) * baseRadius;
+            drawIsoBox(lx - 1, ly - 1, 0, 2, 2, 2, '#78909c');
+            // Caster wheel at end of each leg
+            const wheelPos = toIso(lx, ly, 0);
+            ctx.fillStyle = '#455a64';
+            ctx.beginPath();
+            ctx.ellipse(wheelPos.x, wheelPos.y, 2.5 * scale, 3 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+          });
+
+          // Central base hub
+          drawIsoCylinder(0, 0, 0, 3, 3, '#90a4ae');
+
+          // Main pole
+          drawIsoCylinder(0, 0, 3, 1.5, 38, '#b0bec5');
+
+          // Top crossbar
+          drawIsoBox(-1, -1, 41, 2, 2, 2, '#90a4ae');
+
+          // V-shape hooks (2 on each side)
+          // Left hooks
+          drawIsoBox(-8, -1, 40, 7, 1.5, 1.5, '#78909c');
+          drawIsoBox(-8, -1, 38, 1.5, 1.5, 3, '#78909c');
+          // Right hooks
+          drawIsoBox(1, -1, 40, 7, 1.5, 1.5, '#78909c');
+          drawIsoBox(7, -1, 38, 1.5, 1.5, 3, '#78909c');
+
+          // IV bag hanging from left hook
+          drawIsoBox(-7, -1.5, 28, 5, 2, 10, '#e3f2fd');
+          // IV bag top (thicker seal area)
+          drawIsoBox(-7, -1.5, 37, 5, 2, 2, '#90caf9');
+
+          // Drip chamber
+          drawIsoCylinder(-5, -0.5, 25, 1.5, 4, '#bbdefb');
+
+          // Tubing with better curve
+          ctx.strokeStyle = '#64b5f6';
+          ctx.lineWidth = 1.5;
+          const tubeTop = toIso(-5, -0.5, 25);
+          const tubeMid = toIso(-2, 3, 15);
+          const tubeBottom = toIso(0, 6, 5);
+          ctx.beginPath();
+          ctx.moveTo(tubeTop.x, tubeTop.y);
+          ctx.bezierCurveTo(
+            tubeTop.x + 5, tubeTop.y + 8,
+            tubeMid.x - 5, tubeMid.y,
+            tubeBottom.x, tubeBottom.y
+          );
+          ctx.stroke();
+
+          // Pump/regulator on tube
+          drawIsoBox(-3, 1, 14, 4, 3, 4, '#ffffff');
+          drawIsoBox(-2, 1.5, 15, 2, 2, 2, '#4caf50');
+          break;
+
+        case 'window':
+          // Window with view
+          drawIsoBox(-sw/2, -2, 0, sw, 4, sh, '#ffffff', {highlight: true});
+          // Glass panes
+          drawIsoBox(-sw/2 + 3, -1.5, 3, sw/2 - 4, 2, sh/2 - 4, '#81d4fa');
+          drawIsoBox(1, -1.5, 3, sw/2 - 4, 2, sh/2 - 4, '#81d4fa');
+          drawIsoBox(-sw/2 + 3, -1.5, sh/2 + 1, sw/2 - 4, 2, sh/2 - 4, '#4fc3f7');
+          drawIsoBox(1, -1.5, sh/2 + 1, sw/2 - 4, 2, sh/2 - 4, '#4fc3f7');
+          // Window sill
+          drawIsoBox(-sw/2 - 2, -4, -2, sw + 4, 6, 2, '#eceff1');
+          break;
+
+        case 'door':
+          // Wooden door with panels
+          drawIsoBox(-sw/2, -2, 0, sw, 4, sh * 1.5, '#8d6e63', {highlight: true});
+          // Panels
+          drawIsoBox(-sw/2 + 4, -1.5, sh * 0.1, sw - 8, 2, sh * 0.35, '#6d4c41');
+          drawIsoBox(-sw/2 + 4, -1.5, sh * 0.55, sw - 8, 2, sh * 0.35, '#6d4c41');
+          drawIsoBox(-sw/2 + 4, -1.5, sh * 1.0, sw - 8, 2, sh * 0.35, '#6d4c41');
+          // Door handle
+          drawIsoCylinder(sw/2 - 6, 0, sh * 0.7, 2, 3, '#ffc107');
+          // Keyhole plate
+          drawIsoBox(sw/2 - 7, -1, sh * 0.65, 4, 1, 8, '#ffca28');
+          break;
+
+        default:
+          // Elegant generic box
+          drawIsoBox(-sw/2, -sd/2, 0, sw, sd, sh, '#78909c', {highlight: true});
+      }
+    }
+
+    // Agent Personas - loaded from database via API
+    const agentPersonas = [];
+
+    // Agent appearance data (for customizer dropdown options)
+    const agentAppearances = [
+      // Basic accessories
+      { accessory: 'none', name: 'Default', desc: 'Basic agent appearance', category: 'Basic' },
+      { accessory: 'hat', name: 'Hat', desc: 'Casual cap wearer', category: 'Accessories' },
+      { accessory: 'glasses', name: 'Glasses', desc: 'Professional with spectacles', category: 'Accessories' },
+      { accessory: 'bowtie', name: 'Bowtie', desc: 'Formal/moderator style', category: 'Accessories' },
+      { accessory: 'headphones', name: 'Headphones', desc: 'Music lover', category: 'Accessories' },
+      { accessory: 'scarf', name: 'Scarf', desc: 'Creative/cozy style', category: 'Accessories' },
+      // Professional roles
+      { accessory: 'nurse_scrubs', name: 'Nurse', desc: 'Medical nursing staff', category: 'Professional' },
+      { accessory: 'doctor_coat', name: 'Doctor', desc: 'Medical doctor', category: 'Professional' },
+      { accessory: 'police_uniform', name: 'Police', desc: 'Police officer', category: 'Professional' },
+      { accessory: 'teacher', name: 'Teacher', desc: 'Education professional', category: 'Professional' },
+      { accessory: 'business_suit', name: 'Business', desc: 'Corporate professional', category: 'Professional' },
+      { accessory: 'healthcare_assistant', name: 'Healthcare Assistant', desc: 'Healthcare support staff', category: 'Professional' },
+      // Mobility aids
+      { accessory: 'wheelchair', name: 'Wheelchair', desc: 'Wheelchair user', category: 'Mobility' },
+      { accessory: 'walking_stick', name: 'Walking Stick', desc: 'Uses walking cane', category: 'Mobility' },
+      { accessory: 'zimmer_frame', name: 'Zimmer Frame', desc: 'Uses walking frame', category: 'Mobility' }
+    ];
+
+    const bodyStyles = [
+      { style: 'normal', name: 'Normal', desc: 'Standard body type' },
+      { style: 'tall', name: 'Tall', desc: 'Taller stature' },
+      { style: 'short', name: 'Short', desc: 'Shorter stature' },
+      { style: 'wide', name: 'Wide', desc: 'Broader build' }
+    ];
+
+    async function loadAgents() {
+      const grid = document.getElementById('agents-grid');
+
+      // Fetch agents from API
+      let dbAgents = [];
+      try {
+        const response = await fetch('/api/agents');
+        if (response.ok) {
+          dbAgents = await response.json();
+        }
+      } catch (e) {
+        console.log('Could not fetch agents from API:', e);
+      }
+
+      // Convert DB agents to persona format
+      const dbPersonas = dbAgents.map(agent => {
+        // Extract role from agenda
+        const roleMatch = agent.agenda?.match(/AGENDA\s*\(([^)]+)\)/i);
+        const role = roleMatch ? roleMatch[1] : 'Agent';
+
+        // Extract traits from agenda keywords
+        const traits = [];
+        const agendaLower = (agent.agenda || '').toLowerCase();
+        if (agendaLower.includes('skeptical')) traits.push('Skeptical');
+        if (agendaLower.includes('practical')) traits.push('Practical');
+        if (agendaLower.includes('diplomatic')) traits.push('Diplomatic');
+        if (agendaLower.includes('eager')) traits.push('Eager');
+        if (agendaLower.includes('experienced')) traits.push('Experienced');
+        if (agendaLower.includes('patient') && !roleMatch?.[1]?.toLowerCase().includes('patient')) traits.push('Patient');
+        if (agendaLower.includes('frustrated')) traits.push('Frustrated');
+        if (agendaLower.includes('friendly')) traits.push('Friendly');
+        if (traits.length === 0) traits.push('Dynamic');
+
+        // Get first sentence of agenda as backstory
+        const agendaText = agent.agenda?.replace(/AGENDA[^:]*:/i, '').replace(/AGREEABILITY.*/i, '').trim() || '';
+        const backstory = agendaText.split('.')[0]?.trim() + '.' || 'Agent from ' + (agent.scenarioSource || 'scenario');
+
+        return {
+          id: agent.id,
+          name: agent.name,
+          role: role,
+          category: agent.scenarioSource || 'From Cases',
+          appearance: agent.appearance || { accessory: 'none', bodyStyle: 'normal' },
+          backstory: backstory,
+          traits: traits.slice(0, 3),
+          agreeability: agent.agreeability || 50,
+          fromDb: true
+        };
+      });
+
+      // Use only DB agents (no static personas)
+      const allPersonas = [...dbPersonas];
+
+      // Group personas by category
+      const categories = {};
+      allPersonas.forEach(p => {
+        if (!categories[p.category]) categories[p.category] = [];
+        categories[p.category].push(p);
+      });
+
+      let html = '';
+
+      // Show empty state if no agents
+      if (allPersonas.length === 0) {
+        html = `
+          <div class="col-span-full text-center py-12">
+            <div class="text-6xl mb-4">🎭</div>
+            <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">No Agents Yet</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">Agents are created when you run scenarios.</p>
+            <p class="text-sm text-gray-400 dark:text-gray-500">Go to the <a href="#" onclick="showTab('scenarios')" class="text-indigo-500 hover:text-indigo-700">Scenarios tab</a> to run a scenario and create agents.</p>
+          </div>
+        `;
+        grid.innerHTML = html;
+        return;
+      }
+
+      for (const [catName, personas] of Object.entries(categories)) {
+        const isFromDb = personas[0]?.fromDb;
+        html += `<div class="col-span-full mb-2 mt-6 first:mt-0">
+          <h3 class="text-xl font-bold text-gray-800 dark:text-white border-b border-gray-200 dark:border-slate-600 pb-2">
+            ${isFromDb ? '📂 ' : ''}${catName}
+            ${isFromDb ? '<span class="text-sm font-normal text-gray-500 ml-2">(from cases)</span>' : ''}
+          </h3>
+        </div>`;
+        personas.forEach(persona => {
+          const traitsHtml = persona.traits.map(t =>
+            `<span class="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-xs">${t}</span>`
+          ).join('');
+
+          html += `
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 hover:shadow-xl transition-shadow cursor-pointer ${persona.fromDb ? 'border-l-4 border-indigo-500' : ''}"
+                 onclick="showAgentDetail('${persona.name.replace(/'/g, "\\'")}', ${persona.fromDb || false})">
+              <div class="flex gap-4">
+                <div class="flex-shrink-0">
+                  <canvas id="persona-canvas-${persona.id}" width="100" height="130" class="rounded-lg bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800"></canvas>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="font-bold text-gray-800 dark:text-white text-lg">${persona.name}</h4>
+                  <p class="text-sm font-medium text-indigo-600 dark:text-indigo-400">${persona.role}</p>
+                  <div class="flex flex-wrap gap-1 mt-2">${traitsHtml}</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Agreeability: ${persona.agreeability || 50}/100</div>
+                </div>
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mt-3 leading-relaxed">${persona.backstory}</p>
+              <div class="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                <code class="text-xs text-gray-400 dark:text-gray-500 font-mono">APPEARANCE: ${persona.appearance?.accessory || 'none'}${persona.appearance?.bodyStyle && persona.appearance.bodyStyle !== 'normal' ? ', ' + persona.appearance.bodyStyle : ''}</code>
+                <span class="text-xs text-indigo-500 hover:text-indigo-700">View Details →</span>
+              </div>
+            </div>
+          `;
+        });
+      }
+      grid.innerHTML = html;
+
+      // Draw persona previews after DOM update
+      requestAnimationFrame(() => {
+        allPersonas.forEach(persona => {
+          const canvas = document.getElementById('persona-canvas-' + persona.id);
+          if (canvas) {
+            drawPersonaPreview(canvas, persona);
+          }
+        });
+      });
+    }
+
+    // Draw a persona preview with their specific appearance settings
+    function drawPersonaPreview(canvas, persona) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const x = w / 2;
+      const y = h / 2 + 15;
+      const s = 1.0;  // Scale
+      const app = persona.appearance;
+      const color = app.shirtColor || '#3498db';
+      const skinTone = app.skinTone || '#ffcc80';
+      const accessory = app.accessory || 'none';
+      const bodyStyle = app.bodyStyle || 'normal';
+      const age = app.age || 'adult';
+
+      // Adjust scale based on body style
+      let bodyScale = 1.0;
+      let bodyWidth = 1.0;
+      if (bodyStyle === 'tall') { bodyScale = 1.15; }
+      else if (bodyStyle === 'short') { bodyScale = 0.85; }
+      else if (bodyStyle === 'wide') { bodyWidth = 1.3; }
+
+      const hasWheelchair = accessory === 'wheelchair';
+      const hasWalkingStick = accessory === 'walking_stick';
+      const hasZimmerFrame = accessory === 'zimmer_frame';
+
+      // Draw mobility aids first (behind agent)
+      if (hasWheelchair) {
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 2;
+        // Big wheel
+        ctx.beginPath();
+        ctx.arc(x - 8 * s, y + 12 * s, 14 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        // Small front wheel
+        ctx.beginPath();
+        ctx.arc(x + 15 * s, y + 18 * s, 5 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        // Seat frame
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 15 * s, y + 2 * s, 25 * s, 4 * s);
+        ctx.fillRect(x - 17 * s, y - 18 * s, 4 * s, 24 * s);
+      } else if (hasZimmerFrame) {
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 3;
+        // Frame
+        ctx.beginPath();
+        ctx.moveTo(x - 18 * s, y + 20 * s);
+        ctx.lineTo(x - 18 * s, y - 5 * s);
+        ctx.lineTo(x - 10 * s, y - 10 * s);
+        ctx.lineTo(x + 10 * s, y - 10 * s);
+        ctx.lineTo(x + 18 * s, y - 5 * s);
+        ctx.lineTo(x + 18 * s, y + 20 * s);
+        ctx.stroke();
+        // Crossbar
+        ctx.beginPath();
+        ctx.moveTo(x - 18 * s, y + 5 * s);
+        ctx.lineTo(x + 18 * s, y + 5 * s);
+        ctx.stroke();
+      }
+
+      // Legs (if not in wheelchair)
+      if (!hasWheelchair) {
+        ctx.fillStyle = '#3d5a80';
+        const legW = 5 * s * bodyWidth;
+        const legH = 14 * s * bodyScale;
+        ctx.fillRect(x - 8 * s, y + 8 * s, legW, legH);
+        ctx.fillRect(x + 3 * s, y + 8 * s, legW, legH);
+        // Shoes
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(x - 9 * s, y + 20 * s * bodyScale, legW + 2, 4 * s);
+        ctx.fillRect(x + 2 * s, y + 20 * s * bodyScale, legW + 2, 4 * s);
+      }
+
+      // Body
+      ctx.fillStyle = color;
+      const bodyW = 22 * s * bodyWidth;
+      const bodyH = 24 * s * bodyScale;
+      ctx.beginPath();
+      ctx.roundRect(x - bodyW/2, y - 18 * s * bodyScale, bodyW, bodyH, 4);
+      ctx.fill();
+
+      // Arms
+      ctx.fillStyle = color;
+      ctx.fillRect(x - bodyW/2 - 6 * s, y - 14 * s * bodyScale, 6 * s, 16 * s * bodyScale);
+      ctx.fillRect(x + bodyW/2, y - 14 * s * bodyScale, 6 * s, 16 * s * bodyScale);
+      // Hands
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(x - bodyW/2 - 3 * s, y + 4 * s * bodyScale, 4 * s, 0, Math.PI * 2);
+      ctx.arc(x + bodyW/2 + 3 * s, y + 4 * s * bodyScale, 4 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Walking stick (in hand)
+      if (hasWalkingStick) {
+        ctx.strokeStyle = '#8b4513';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + bodyW/2 + 3 * s, y + 4 * s);
+        ctx.lineTo(x + bodyW/2 + 8 * s, y + 22 * s);
+        ctx.stroke();
+        // Handle
+        ctx.beginPath();
+        ctx.arc(x + bodyW/2 + 3 * s, y + 2 * s, 4, Math.PI, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Neck
+      ctx.fillStyle = skinTone;
+      ctx.fillRect(x - 4 * s, y - 22 * s * bodyScale, 8 * s, 6 * s);
+
+      // Head
+      const headSize = (age === 'elderly' ? 13 : 14) * s * bodyScale;
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(x, y - 30 * s * bodyScale, headSize, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair (gray for elderly)
+      const hairColor = (age === 'elderly') ? '#c0c0c0' : '#4a3728';
+      ctx.fillStyle = hairColor;
+      ctx.beginPath();
+      ctx.arc(x, y - 32 * s * bodyScale, headSize - 2, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Face
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(x - 4 * s, y - 32 * s * bodyScale, 2, 0, Math.PI * 2);
+      ctx.arc(x + 4 * s, y - 32 * s * bodyScale, 2, 0, Math.PI * 2);
+      ctx.fill();
+      // Smile
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(x, y - 28 * s * bodyScale, 4, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+
+      // Professional accessories
+      if (accessory === 'doctor_coat') {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.roundRect(x - bodyW/2 - 2, y - 18 * s * bodyScale, bodyW + 4, bodyH + 8, 4);
+        ctx.fill();
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Stethoscope
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, y - 5 * s * bodyScale, 8, 0, Math.PI);
+        ctx.stroke();
+      } else if (accessory === 'nurse_scrubs') {
+        // Scrubs top overlay
+        ctx.fillStyle = '#4a9';
+        ctx.beginPath();
+        ctx.roundRect(x - bodyW/2, y - 18 * s * bodyScale, bodyW, bodyH - 4, 4);
+        ctx.fill();
+      } else if (accessory === 'business_suit') {
+        // Tie
+        ctx.fillStyle = '#8b0000';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 16 * s * bodyScale);
+        ctx.lineTo(x - 4, y - 10 * s * bodyScale);
+        ctx.lineTo(x, y + 2 * s * bodyScale);
+        ctx.lineTo(x + 4, y - 10 * s * bodyScale);
+        ctx.closePath();
+        ctx.fill();
+      } else if (accessory === 'bowtie') {
+        ctx.fillStyle = '#8b0000';
+        ctx.beginPath();
+        ctx.ellipse(x - 6, y - 16 * s * bodyScale, 5, 3, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 6, y - 16 * s * bodyScale, 5, 3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x, y - 16 * s * bodyScale, 3, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (accessory === 'police_uniform') {
+        // Badge
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - 12 * s * bodyScale);
+        ctx.lineTo(x - 3, y - 8 * s * bodyScale);
+        ctx.lineTo(x - 6, y - 4 * s * bodyScale);
+        ctx.lineTo(x - 9, y - 8 * s * bodyScale);
+        ctx.closePath();
+        ctx.fill();
+        // Hat
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(x - 12 * s, y - 44 * s * bodyScale, 24 * s, 6 * s);
+        ctx.fillRect(x - 8 * s, y - 50 * s * bodyScale, 16 * s, 8 * s);
+      } else if (accessory === 'teacher') {
+        // Cardigan overlay
+        ctx.strokeStyle = '#8b4513';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, y - 16 * s * bodyScale);
+        ctx.lineTo(x, y + 6 * s * bodyScale);
+        ctx.stroke();
+      } else if (accessory === 'healthcare_assistant') {
+        // Simple tunic
+        ctx.fillStyle = '#6b7280';
+        ctx.beginPath();
+        ctx.roundRect(x - bodyW/2, y - 18 * s * bodyScale, bodyW, bodyH - 4, 4);
+        ctx.fill();
+      } else if (accessory === 'glasses') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x - 5 * s, y - 32 * s * bodyScale, 5, 0, Math.PI * 2);
+        ctx.arc(x + 5 * s, y - 32 * s * bodyScale, 5, 0, Math.PI * 2);
+        ctx.moveTo(x - 10 * s, y - 32 * s * bodyScale);
+        ctx.lineTo(x - headSize, y - 32 * s * bodyScale);
+        ctx.moveTo(x + 10 * s, y - 32 * s * bodyScale);
+        ctx.lineTo(x + headSize, y - 32 * s * bodyScale);
+        ctx.moveTo(x, y - 32 * s * bodyScale);
+        ctx.lineTo(x, y - 32 * s * bodyScale);
+        ctx.stroke();
+      }
+    }
+
+    function drawAgentPreview(canvas, accessory) {
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const x = w / 2;
+      const y = h / 2 + 10;
+      const s = 1.2;  // Scale
+      const color = '#3498db';
+      const skinTone = '#ffcc80';
+      const hasWheelchair = accessory === 'wheelchair';
+
+      // Draw wheelchair if applicable
+      if (hasWheelchair) {
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2 * s;
+        // Big wheel
+        ctx.beginPath();
+        ctx.arc(x - 5 * s, y + 10 * s, 12 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        // Spokes
+        ctx.beginPath();
+        ctx.moveTo(x - 5 * s, y + 10 * s - 10 * s);
+        ctx.lineTo(x - 5 * s, y + 10 * s + 10 * s);
+        ctx.moveTo(x - 5 * s - 10 * s, y + 10 * s);
+        ctx.lineTo(x - 5 * s + 10 * s, y + 10 * s);
+        ctx.stroke();
+        // Small front wheel
+        ctx.beginPath();
+        ctx.arc(x + 12 * s, y + 16 * s, 4 * s, 0, Math.PI * 2);
+        ctx.stroke();
+        // Seat
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 12 * s, y + 2 * s, 20 * s, 4 * s);
+        // Back rest
+        ctx.fillRect(x - 14 * s, y - 15 * s, 4 * s, 20 * s);
+        // Footrest
+        ctx.fillRect(x + 8 * s, y + 12 * s, 8 * s, 3 * s);
+      } else {
+        // Normal legs
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 7 * s, y + 6 * s, 5 * s, 12 * s);
+        ctx.fillRect(x + 2 * s, y + 6 * s, 5 * s, 12 * s);
+      }
+
+      // Body
+      const bodyY = hasWheelchair ? y - 10 * s : y - 14 * s;
+      ctx.fillStyle = color;
+      ctx.fillRect(x - 8 * s, bodyY, 16 * s, 20 * s);
+
+      // Professional uniforms
+      if (accessory === 'nurse_scrubs') {
+        ctx.fillStyle = '#17a2b8';
+        ctx.fillRect(x - 8 * s, bodyY, 16 * s, 18 * s);
+        ctx.fillStyle = skinTone;
+        ctx.beginPath();
+        ctx.moveTo(x - 3 * s, bodyY);
+        ctx.lineTo(x, bodyY + 5 * s);
+        ctx.lineTo(x + 3 * s, bodyY);
+        ctx.closePath();
+        ctx.fill();
+      } else if (accessory === 'doctor_coat') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - 9 * s, bodyY - 2 * s, 18 * s, 22 * s);
+        ctx.strokeStyle = '#ddd';
+        ctx.strokeRect(x - 9 * s, bodyY - 2 * s, 18 * s, 22 * s);
+      } else if (accessory === 'police_uniform') {
+        ctx.fillStyle = '#1a237e';
+        ctx.fillRect(x - 8 * s, bodyY, 16 * s, 20 * s);
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(x, bodyY + 5 * s, 3 * s, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (accessory === 'teacher') {
+        ctx.fillStyle = '#7d3c98';
+        ctx.fillRect(x - 9 * s, bodyY, 18 * s, 18 * s);
+      } else if (accessory === 'business_suit') {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(x - 8 * s, bodyY, 16 * s, 20 * s);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - 4 * s, bodyY);
+        ctx.lineTo(x, bodyY + 18 * s);
+        ctx.lineTo(x + 4 * s, bodyY);
+        ctx.stroke();
+      } else if (accessory === 'healthcare_assistant') {
+        ctx.fillStyle = '#85c1e9';
+        ctx.fillRect(x - 8 * s, bodyY, 16 * s, 18 * s);
+      }
+
+      // Head
+      ctx.save();
+      ctx.translate(x, bodyY - 6 * s);
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(0, 0, 10 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(0, -2 * s, 10 * s, Math.PI, 0);
+      ctx.fill();
+
+      // Accessory-specific drawing
+      if (accessory === 'hat') {
+        ctx.fillStyle = '#27ae60';
+        ctx.fillRect(-10 * s, -10 * s, 20 * s, 6 * s);
+        ctx.fillRect(-6 * s, -14 * s, 12 * s, 5 * s);
+      } else if (accessory === 'glasses') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(-4 * s, -1 * s, 4 * s, 0, Math.PI * 2);
+        ctx.arc(4 * s, -1 * s, 4 * s, 0, Math.PI * 2);
+        ctx.moveTo(0, -1 * s);
+        ctx.lineTo(-4 * s + 4 * s, -1 * s);
+        ctx.stroke();
+      } else if (accessory === 'bowtie') {
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.moveTo(-6 * s, 8 * s);
+        ctx.lineTo(-2 * s, 10 * s);
+        ctx.lineTo(-6 * s, 12 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(6 * s, 8 * s);
+        ctx.lineTo(2 * s, 10 * s);
+        ctx.lineTo(6 * s, 12 * s);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillRect(-2 * s, 8 * s, 4 * s, 4 * s);
+      } else if (accessory === 'headphones') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, -2 * s, 12 * s, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#555';
+        ctx.fillRect(-14 * s, -4 * s, 5 * s, 8 * s);
+        ctx.fillRect(9 * s, -4 * s, 5 * s, 8 * s);
+      } else if (accessory === 'scarf') {
+        ctx.fillStyle = '#9b59b6';
+        ctx.fillRect(-10 * s, 6 * s, 20 * s, 4 * s);
+        ctx.fillRect(6 * s, 6 * s, 4 * s, 15 * s);
+      } else if (accessory === 'walking_stick') {
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 3 * s;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(12 * s, 5 * s);
+        ctx.lineTo(14 * s, 30 * s);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(11 * s, 4 * s, 3 * s, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.stroke();
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(14 * s, 31 * s, 2 * s, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (accessory === 'zimmer_frame') {
+        ctx.strokeStyle = '#9e9e9e';
+        ctx.lineWidth = 2.5 * s;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-18 * s, 5 * s);
+        ctx.lineTo(-18 * s, 32 * s);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(18 * s, 5 * s);
+        ctx.lineTo(18 * s, 32 * s);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-18 * s, 32 * s);
+        ctx.lineTo(18 * s, 32 * s);
+        ctx.stroke();
+        ctx.lineWidth = 4 * s;
+        ctx.strokeStyle = '#757575';
+        ctx.beginPath();
+        ctx.moveTo(-18 * s, 4 * s);
+        ctx.lineTo(-14 * s, 4 * s);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(14 * s, 4 * s);
+        ctx.lineTo(18 * s, 4 * s);
+        ctx.stroke();
+        ctx.fillStyle = '#424242';
+        ctx.beginPath();
+        ctx.arc(-18 * s, 33 * s, 2 * s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(18 * s, 33 * s, 2 * s, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Eyes
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(-3 * s, -1 * s, 1.5 * s, 0, Math.PI * 2);
+      ctx.arc(3 * s, -1 * s, 1.5 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Agent Customizer State
+    let agentPreviewMode = '2d';
+
+    function setAgentPreviewMode(mode) {
+      agentPreviewMode = mode;
+      document.getElementById('agent-view-2d').className = mode === '2d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      document.getElementById('agent-view-3d').className = mode === '3d'
+        ? 'px-3 py-1 rounded text-sm bg-primary text-white'
+        : 'px-3 py-1 rounded text-sm bg-gray-200 text-gray-700';
+      updateAgentPreview();
+    }
+
+    function getCustomAgentConfig() {
+      return {
+        age: document.getElementById('agent-age')?.value || 'adult',
+        gender: document.getElementById('agent-gender')?.value || 'male',
+        bodyStyle: document.getElementById('agent-body-style')?.value || 'normal',
+        shapeType: document.getElementById('agent-shape-type')?.value || 'box',
+        skinTone: document.getElementById('agent-skin-tone')?.value || '#d4a574',
+        hairColor: document.getElementById('agent-hair-color')?.value || '#4a3728',
+        color: document.getElementById('agent-color')?.value || '#3498db',
+        accessory: document.getElementById('agent-accessory')?.value || 'none',
+        profession: document.getElementById('agent-profession')?.value || 'none',
+        mobility: document.getElementById('agent-mobility')?.value || 'standing'
+      };
+    }
+
+    function updateAgentPreview() {
+      const canvas = document.getElementById('custom-agent-preview');
+      if (!canvas) return;
+
+      const config = getCustomAgentConfig();
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      // Draw gradient background
+      const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bgGrad.addColorStop(0, '#e2e8f0');
+      bgGrad.addColorStop(1, '#cbd5e1');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      if (agentPreviewMode === '3d') {
+        drawCustomAgent3D(ctx, w/2, h/2 + 20, config);
+      } else {
+        drawCustomAgent2D(ctx, w/2, h/2 + 20, config);
+      }
+
+      // Update code preview
+      const codeEl = document.getElementById('agent-code-preview');
+      if (codeEl) {
+        codeEl.textContent = JSON.stringify({
+          bodyStyle: config.bodyStyle,
+          shapeType: config.shapeType,
+          color: config.color,
+          skinTone: config.skinTone,
+          accessory: config.accessory !== 'none' ? config.accessory : undefined,
+          professionalRole: config.profession !== 'none' ? config.profession : undefined,
+          mobility: config.mobility !== 'standing' ? config.mobility : undefined
+        }, null, 2);
+      }
+    }
+
+    function drawCustomAgent2D(ctx, x, y, config) {
+      const s = 2.0; // Larger scale to fill preview window
+      const color = config.color;
+      const skinTone = config.skinTone;
+      const hairColor = config.hairColor;
+      const hasWheelchair = config.mobility === 'wheelchair';
+
+      // Apply body style adjustments (matching thronglet.js)
+      let heightMod = 1, widthMod = 1, scaleAdj = 1;
+      if (config.bodyStyle === 'tall') { heightMod = 1.15; widthMod = 0.9; }
+      else if (config.bodyStyle === 'short') { heightMod = 0.85; widthMod = 1.1; scaleAdj = 0.9; }
+      else if (config.bodyStyle === 'wide') { widthMod = 1.2; }
+      else if (config.bodyStyle === 'athletic') { heightMod = 1.1; widthMod = 0.95; }
+
+      // Age adjustments
+      if (config.age === 'child') { scaleAdj *= 0.7; }
+      else if (config.age === 'teen') { scaleAdj *= 0.85; }
+      else if (config.age === 'elderly') { heightMod *= 0.95; }
+
+      const finalScale = s * scaleAdj;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 18 * finalScale, 10 * finalScale, 4 * finalScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw wheelchair if applicable (matching thronglet.js style)
+      if (hasWheelchair) {
+        // Big wheel with spokes
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2.5 * finalScale;
+        ctx.beginPath();
+        ctx.arc(x - 5 * finalScale, y + 10 * finalScale, 15 * finalScale, 0, Math.PI * 2);
+        ctx.stroke();
+        // Wheel spokes
+        for (let i = 0; i < 8; i++) {
+          const angle = (i / 8) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(x - 5 * finalScale, y + 10 * finalScale);
+          ctx.lineTo(x - 5 * finalScale + Math.cos(angle) * 13 * finalScale,
+                     y + 10 * finalScale + Math.sin(angle) * 13 * finalScale);
+          ctx.stroke();
+        }
+        // Hub
+        ctx.fillStyle = '#444';
+        ctx.beginPath();
+        ctx.arc(x - 5 * finalScale, y + 10 * finalScale, 3 * finalScale, 0, Math.PI * 2);
+        ctx.fill();
+        // Small front wheel
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2 * finalScale;
+        ctx.beginPath();
+        ctx.arc(x + 15 * finalScale, y + 18 * finalScale, 5 * finalScale, 0, Math.PI * 2);
+        ctx.stroke();
+        // Seat
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(x - 12 * finalScale, y - 2 * finalScale, 22 * finalScale, 5 * finalScale);
+        // Backrest
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(x - 14 * finalScale, y - 22 * finalScale, 5 * finalScale, 22 * finalScale);
+        // Armrest
+        ctx.fillRect(x + 5 * finalScale, y - 8 * finalScale, 10 * finalScale, 3 * finalScale);
+        // Footrest
+        ctx.fillStyle = '#555';
+        ctx.fillRect(x + 10 * finalScale, y + 12 * finalScale, 10 * finalScale, 3 * finalScale);
+      } else {
+        // Normal legs (pixelated style)
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 7 * finalScale, y + 6 * finalScale, 5 * finalScale, 12 * finalScale);
+        ctx.fillRect(x + 2 * finalScale, y + 6 * finalScale, 5 * finalScale, 12 * finalScale);
+      }
+
+      // Body position
+      const bodyY = hasWheelchair ? y - 14 * finalScale : y - 14 * finalScale;
+      const bodyW = 16 * finalScale * widthMod;
+      const bodyH = 20 * finalScale * heightMod;
+
+      // Draw body with professional uniforms (matching thronglet.js exactly)
+      if (config.profession === 'nurse_scrubs') {
+        ctx.fillStyle = '#17a2b8';
+        ctx.fillRect(x - bodyW/2, bodyY, bodyW, bodyH);
+        // V-neck
+        ctx.fillStyle = skinTone;
+        ctx.beginPath();
+        ctx.moveTo(x - 3 * finalScale, bodyY);
+        ctx.lineTo(x, bodyY + 5 * finalScale);
+        ctx.lineTo(x + 3 * finalScale, bodyY);
+        ctx.closePath();
+        ctx.fill();
+        // Pockets
+        ctx.fillStyle = '#138496';
+        ctx.fillRect(x - 6 * finalScale, bodyY + 8 * finalScale, 4 * finalScale, 5 * finalScale);
+        ctx.fillRect(x + 2 * finalScale, bodyY + 8 * finalScale, 4 * finalScale, 5 * finalScale);
+      } else if (config.profession === 'doctor_coat') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - bodyW/2 - 2*finalScale, bodyY - 2*finalScale, bodyW + 4*finalScale, bodyH + 4*finalScale);
+        ctx.strokeStyle = '#ddd';
+        ctx.strokeRect(x - bodyW/2 - 2*finalScale, bodyY - 2*finalScale, bodyW + 4*finalScale, bodyH + 4*finalScale);
+        // Stethoscope
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2 * finalScale;
+        ctx.beginPath();
+        ctx.arc(x, bodyY + 8 * finalScale, 4 * finalScale, 0.5, Math.PI - 0.5);
+        ctx.stroke();
+        // Pockets
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(x - 7 * finalScale, bodyY + 12 * finalScale, 5 * finalScale, 4 * finalScale);
+        ctx.fillRect(x + 2 * finalScale, bodyY + 12 * finalScale, 5 * finalScale, 4 * finalScale);
+      } else if (config.profession === 'police_uniform') {
+        ctx.fillStyle = '#1a237e';
+        ctx.fillRect(x - bodyW/2, bodyY, bodyW, bodyH);
+        // Badge
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.moveTo(x - 4 * finalScale, bodyY + 3 * finalScale);
+        ctx.lineTo(x - 1 * finalScale, bodyY + 1 * finalScale);
+        ctx.lineTo(x + 2 * finalScale, bodyY + 3 * finalScale);
+        ctx.lineTo(x + 1 * finalScale, bodyY + 7 * finalScale);
+        ctx.lineTo(x - 3 * finalScale, bodyY + 7 * finalScale);
+        ctx.closePath();
+        ctx.fill();
+        // Shoulder stripes
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(x - 10 * finalScale, bodyY + 1 * finalScale, 4 * finalScale, 3 * finalScale);
+        ctx.fillRect(x + 6 * finalScale, bodyY + 1 * finalScale, 4 * finalScale, 3 * finalScale);
+      } else if (config.profession === 'teacher') {
+        // Cardigan
+        ctx.fillStyle = '#5d4037';
+        ctx.fillRect(x - bodyW/2 - 2*finalScale, bodyY, bodyW + 4*finalScale, bodyH);
+        // Shirt underneath
+        ctx.fillStyle = '#eceff1';
+        ctx.fillRect(x - 4 * finalScale, bodyY, 8 * finalScale, bodyH - 2*finalScale);
+        // Elbow patches
+        ctx.fillStyle = '#8d6e63';
+        ctx.fillRect(x - 10 * finalScale, bodyY + 8 * finalScale, 3 * finalScale, 4 * finalScale);
+        ctx.fillRect(x + 7 * finalScale, bodyY + 8 * finalScale, 3 * finalScale, 4 * finalScale);
+      } else if (config.profession === 'business_suit') {
+        // Jacket
+        ctx.fillStyle = '#263238';
+        ctx.fillRect(x - bodyW/2 - 2*finalScale, bodyY, bodyW + 4*finalScale, bodyH);
+        // Lapels
+        ctx.fillStyle = '#37474f';
+        ctx.beginPath();
+        ctx.moveTo(x - 3 * finalScale, bodyY);
+        ctx.lineTo(x - 6 * finalScale, bodyY + 10 * finalScale);
+        ctx.lineTo(x - 3 * finalScale, bodyY + 10 * finalScale);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(x + 3 * finalScale, bodyY);
+        ctx.lineTo(x + 6 * finalScale, bodyY + 10 * finalScale);
+        ctx.lineTo(x + 3 * finalScale, bodyY + 10 * finalScale);
+        ctx.closePath();
+        ctx.fill();
+        // Tie
+        ctx.fillStyle = '#c62828';
+        ctx.fillRect(x - 2 * finalScale, bodyY + 2 * finalScale, 4 * finalScale, 12 * finalScale);
+        // Buttons
+        ctx.fillStyle = '#90a4ae';
+        ctx.beginPath();
+        ctx.arc(x, bodyY + 15 * finalScale, 1.5 * finalScale, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (config.profession === 'healthcare_assistant') {
+        ctx.fillStyle = '#85c1e9';
+        ctx.fillRect(x - bodyW/2, bodyY, bodyW, bodyH);
+        // Name badge
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x - 5 * finalScale, bodyY + 3 * finalScale, 10 * finalScale, 4 * finalScale);
+      } else {
+        // Default casual body
+        ctx.fillStyle = color;
+        ctx.fillRect(x - bodyW/2, bodyY, bodyW, bodyH);
+      }
+
+      // Head
+      ctx.save();
+      ctx.translate(x, bodyY - 6 * finalScale);
+
+      // Head circle (pixelated style)
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(0, 0, 10 * finalScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = config.age === 'elderly' ? '#c0c0c0' : hairColor;
+      ctx.beginPath();
+      ctx.arc(0, -2 * finalScale, 10 * finalScale, Math.PI, 0);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(-3 * finalScale, -1 * finalScale, 1.5 * finalScale, 0, Math.PI * 2);
+      ctx.arc(3 * finalScale, -1 * finalScale, 1.5 * finalScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wrinkles for elderly/middle-aged
+      if (config.age === 'elderly' || config.age === 'middle') {
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-5 * finalScale, -3 * finalScale);
+        ctx.lineTo(-7 * finalScale, -2 * finalScale);
+        ctx.moveTo(5 * finalScale, -3 * finalScale);
+        ctx.lineTo(7 * finalScale, -2 * finalScale);
+        ctx.stroke();
+      }
+
+      // Accessories (matching thronglet.js exactly)
+      if (config.accessory === 'hat') {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-8 * finalScale, -14 * finalScale, 16 * finalScale, 4 * finalScale); // brim
+        ctx.fillRect(-5 * finalScale, -22 * finalScale, 10 * finalScale, 10 * finalScale); // top
+      } else if (config.accessory === 'glasses') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(-4 * finalScale, -1 * finalScale, 3 * finalScale, 0, Math.PI * 2);
+        ctx.arc(4 * finalScale, -1 * finalScale, 3 * finalScale, 0, Math.PI * 2);
+        ctx.moveTo(-1 * finalScale, -1 * finalScale);
+        ctx.lineTo(1 * finalScale, -1 * finalScale);
+        ctx.stroke();
+      } else if (config.accessory === 'bowtie') {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.moveTo(0, 8 * finalScale);
+        ctx.lineTo(-6 * finalScale, 5 * finalScale);
+        ctx.lineTo(-6 * finalScale, 11 * finalScale);
+        ctx.lineTo(0, 8 * finalScale);
+        ctx.lineTo(6 * finalScale, 5 * finalScale);
+        ctx.lineTo(6 * finalScale, 11 * finalScale);
+        ctx.closePath();
+        ctx.fill();
+      } else if (config.accessory === 'headphones') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, -2 * finalScale, 12 * finalScale, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#555';
+        ctx.fillRect(-14 * finalScale, -4 * finalScale, 5 * finalScale, 8 * finalScale);
+        ctx.fillRect(9 * finalScale, -4 * finalScale, 5 * finalScale, 8 * finalScale);
+      } else if (config.accessory === 'scarf') {
+        ctx.fillStyle = '#9b59b6';
+        ctx.fillRect(-10 * finalScale, 6 * finalScale, 20 * finalScale, 4 * finalScale);
+        ctx.fillRect(6 * finalScale, 6 * finalScale, 4 * finalScale, 15 * finalScale);
+      }
+
+      ctx.restore();
+
+      // Mobility aids drawn after body (walking stick, zimmer frame)
+      if (config.mobility === 'walking_stick') {
+        ctx.strokeStyle = '#5d4037';
+        ctx.lineWidth = 3 * finalScale;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(x + 12 * finalScale, y - 5 * finalScale);
+        ctx.lineTo(x + 14 * finalScale, y + 20 * finalScale);
+        ctx.stroke();
+        // Handle curve
+        ctx.beginPath();
+        ctx.arc(x + 11 * finalScale, y - 6 * finalScale, 3 * finalScale, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.stroke();
+        // Rubber tip
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(x + 14 * finalScale, y + 21 * finalScale, 2 * finalScale, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (config.mobility === 'zimmer_frame') {
+        ctx.strokeStyle = '#9e9e9e';
+        ctx.lineWidth = 2.5 * finalScale;
+        ctx.lineCap = 'round';
+        // Frame sides
+        ctx.beginPath();
+        ctx.moveTo(x - 18 * finalScale, y - 5 * finalScale);
+        ctx.lineTo(x - 18 * finalScale, y + 22 * finalScale);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x + 18 * finalScale, y - 5 * finalScale);
+        ctx.lineTo(x + 18 * finalScale, y + 22 * finalScale);
+        ctx.stroke();
+        // Front crossbar
+        ctx.beginPath();
+        ctx.moveTo(x - 18 * finalScale, y + 22 * finalScale);
+        ctx.lineTo(x + 18 * finalScale, y + 22 * finalScale);
+        ctx.stroke();
+        // Top handles
+        ctx.beginPath();
+        ctx.moveTo(x - 18 * finalScale, y - 5 * finalScale);
+        ctx.lineTo(x - 12 * finalScale, y - 5 * finalScale);
+        ctx.moveTo(x + 18 * finalScale, y - 5 * finalScale);
+        ctx.lineTo(x + 12 * finalScale, y - 5 * finalScale);
+        ctx.stroke();
+      }
+    }
+
+    function drawCustomAgent3D(ctx, x, y, config) {
+      const s = 2.0; // Larger scale to fill preview window
+      const color = config.color;
+      const skinTone = config.skinTone;
+      const hairColor = config.hairColor;
+
+      // Body style dimensions
+      let bodyW = 25, bodyH = 35, bodyD = 15;
+      if (config.bodyStyle === 'tall') { bodyW = 22; bodyH = 45; bodyD = 12; }
+      else if (config.bodyStyle === 'short') { bodyW = 28; bodyH = 28; bodyD = 16; }
+      else if (config.bodyStyle === 'wide') { bodyW = 35; bodyH = 32; bodyD = 20; }
+      else if (config.bodyStyle === 'athletic') { bodyW = 26; bodyH = 40; bodyD = 14; }
+
+      // Age scaling
+      let ageScale = 1;
+      if (config.age === 'child') ageScale = 0.7;
+      else if (config.age === 'teen') ageScale = 0.85;
+
+      bodyW *= s * ageScale;
+      bodyH *= s * ageScale;
+      bodyD *= s * ageScale;
+
+      const bobOffset = Math.sin(Date.now() / 300) * 2 * s;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 10 * s, 20 * s * ageScale, 8 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Draw legs first (behind body) - unless wheelchair
+      if (config.mobility !== 'wheelchair') {
+        ctx.fillStyle = '#333';
+        // Left leg (isometric)
+        ctx.beginPath();
+        ctx.moveTo(x - 8 * s * ageScale, y + bobOffset);
+        ctx.lineTo(x - 8 * s * ageScale, y + 15 * s * ageScale + bobOffset);
+        ctx.lineTo(x - 3 * s * ageScale, y + 15 * s * ageScale + bobOffset);
+        ctx.lineTo(x - 3 * s * ageScale, y + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+        // Right leg
+        ctx.beginPath();
+        ctx.moveTo(x + 3 * s * ageScale, y + bobOffset);
+        ctx.lineTo(x + 3 * s * ageScale, y + 15 * s * ageScale + bobOffset);
+        ctx.lineTo(x + 8 * s * ageScale, y + 15 * s * ageScale + bobOffset);
+        ctx.lineTo(x + 8 * s * ageScale, y + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // Draw wheelchair
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 2.5 * s;
+        // Big wheel
+        ctx.beginPath();
+        ctx.arc(x - 5 * s, y + 5 * s + bobOffset, 18 * s * ageScale, 0, Math.PI * 2);
+        ctx.stroke();
+        // Spokes
+        for (let i = 0; i < 6; i++) {
+          const angle = (i / 6) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.moveTo(x - 5 * s, y + 5 * s + bobOffset);
+          ctx.lineTo(x - 5 * s + Math.cos(angle) * 16 * s * ageScale, y + 5 * s + bobOffset + Math.sin(angle) * 16 * s * ageScale);
+          ctx.stroke();
+        }
+        // Small wheel
+        ctx.beginPath();
+        ctx.arc(x + 18 * s * ageScale, y + 15 * s + bobOffset, 6 * s * ageScale, 0, Math.PI * 2);
+        ctx.stroke();
+        // Seat
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(x - 15 * s * ageScale, y - 8 * s + bobOffset, 28 * s * ageScale, 6 * s);
+        // Backrest
+        ctx.fillStyle = '#34495e';
+        ctx.fillRect(x - 18 * s * ageScale, y - bodyH + 5 * s + bobOffset, 6 * s, bodyH - 10 * s);
+      }
+
+      // Professional role color
+      let bodyColor = color;
+      let hasCoat = false;
+      if (config.profession === 'nurse_scrubs') bodyColor = '#5dade2';
+      else if (config.profession === 'doctor_coat') { bodyColor = '#ffffff'; hasCoat = true; }
+      else if (config.profession === 'police_uniform') bodyColor = '#1a237e';
+      else if (config.profession === 'healthcare_assistant') bodyColor = '#81d4fa';
+      else if (config.profession === 'business_suit') bodyColor = '#263238';
+      else if (config.profession === 'teacher') bodyColor = '#5d4037';
+
+      // Draw body based on shape type
+      if (config.shapeType === 'cylinder') {
+        // Cylindrical body
+        ctx.fillStyle = shadeColor(bodyColor, -15);
+        ctx.beginPath();
+        ctx.moveTo(x - bodyW/2, y - bodyH + bobOffset);
+        ctx.lineTo(x - bodyW/2, y + bobOffset);
+        ctx.quadraticCurveTo(x - bodyW/2, y + bodyD/2 + bobOffset, x, y + bodyD/2 + bobOffset);
+        ctx.quadraticCurveTo(x + bodyW/2, y + bodyD/2 + bobOffset, x + bodyW/2, y + bobOffset);
+        ctx.lineTo(x + bodyW/2, y - bodyH + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(x, y - bodyH + bobOffset, bodyW/2, bodyD/2, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (config.shapeType === 'oval') {
+        // Oval body
+        ctx.fillStyle = shadeColor(bodyColor, -35);
+        ctx.beginPath();
+        ctx.ellipse(x + 3*s, y - bodyH/2 + 5*s + bobOffset, bodyW/2 + 2*s, bodyH/2 + 2*s, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = shadeColor(bodyColor, -10);
+        ctx.beginPath();
+        ctx.ellipse(x, y - bodyH/2 + bobOffset, bodyW/2, bodyH/2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.ellipse(x - bodyW/6, y - bodyH/2 - 3*s + bobOffset, bodyW/4, bodyH/3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Default box body (isometric)
+        ctx.fillStyle = shadeColor(bodyColor, -20);
+        ctx.beginPath();
+        ctx.moveTo(x - bodyW/2, y - bodyH + bobOffset);
+        ctx.lineTo(x - bodyW/2, y + bobOffset);
+        ctx.lineTo(x, y + bodyD/2 + bobOffset);
+        ctx.lineTo(x, y - bodyH + bodyD/2 + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = shadeColor(bodyColor, -40);
+        ctx.beginPath();
+        ctx.moveTo(x + bodyW/2, y - bodyH + bobOffset);
+        ctx.lineTo(x + bodyW/2, y + bobOffset);
+        ctx.lineTo(x, y + bodyD/2 + bobOffset);
+        ctx.lineTo(x, y - bodyH + bodyD/2 + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath();
+        ctx.moveTo(x - bodyW/2, y - bodyH + bobOffset);
+        ctx.lineTo(x, y - bodyH - bodyD/2 + bobOffset);
+        ctx.lineTo(x + bodyW/2, y - bodyH + bobOffset);
+        ctx.lineTo(x, y - bodyH + bodyD/2 + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // White coat overlay for doctors
+      if (hasCoat) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(x - bodyW/2 - 3*s, y - bodyH + 10*s + bobOffset);
+        ctx.lineTo(x - bodyW/2 - 3*s, y + 5*s + bobOffset);
+        ctx.lineTo(x + bodyW/2 + 3*s, y + 5*s + bobOffset);
+        ctx.lineTo(x + bodyW/2 + 3*s, y - bodyH + 10*s + bobOffset);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#ccc';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Arms (isometric style)
+      const armColor = hasCoat ? '#ffffff' : shadeColor(bodyColor, -15);
+      const armY = y - bodyH + 8 * s * ageScale + bobOffset;
+      ctx.fillStyle = armColor;
+
+      // Left arm
+      ctx.beginPath();
+      ctx.moveTo(x - bodyW/2, armY);
+      ctx.lineTo(x - bodyW/2 - 10*s*ageScale, armY + 18*s*ageScale);
+      ctx.lineTo(x - bodyW/2 - 5*s*ageScale, armY + 20*s*ageScale);
+      ctx.lineTo(x - bodyW/2 + 5*s*ageScale, armY + 5*s*ageScale);
+      ctx.closePath();
+      ctx.fill();
+
+      // Left hand
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(x - bodyW/2 - 8*s*ageScale, armY + 20*s*ageScale, 4*s*ageScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Right arm
+      ctx.fillStyle = armColor;
+      ctx.beginPath();
+      ctx.moveTo(x + bodyW/2, armY);
+      ctx.lineTo(x + bodyW/2 + 10*s*ageScale, armY + 18*s*ageScale);
+      ctx.lineTo(x + bodyW/2 + 5*s*ageScale, armY + 20*s*ageScale);
+      ctx.lineTo(x + bodyW/2 - 5*s*ageScale, armY + 5*s*ageScale);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right hand
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.arc(x + bodyW/2 + 8*s*ageScale, armY + 20*s*ageScale, 4*s*ageScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Head
+      const headY = y - bodyH - 12 * s * ageScale + bobOffset;
+      ctx.fillStyle = shadeColor(skinTone, -20);
+      ctx.beginPath();
+      ctx.ellipse(x, headY, 12 * s * ageScale, 10 * s * ageScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = skinTone;
+      ctx.beginPath();
+      ctx.ellipse(x, headY - 2 * s, 11 * s * ageScale, 9 * s * ageScale, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = config.age === 'elderly' ? '#c0c0c0' : hairColor;
+      ctx.beginPath();
+      ctx.ellipse(x, headY - 8 * s * ageScale, 10 * s * ageScale, 5 * s * ageScale, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.arc(x - 4 * s * ageScale, headY - 2 * s, 2 * s * ageScale, 0, Math.PI * 2);
+      ctx.arc(x + 4 * s * ageScale, headY - 2 * s, 2 * s * ageScale, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Wrinkles for elderly
+      if (config.age === 'elderly' || config.age === 'middle') {
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x - 6 * s * ageScale, headY - 4 * s);
+        ctx.lineTo(x - 8 * s * ageScale, headY - 3 * s);
+        ctx.moveTo(x + 6 * s * ageScale, headY - 4 * s);
+        ctx.lineTo(x + 8 * s * ageScale, headY - 3 * s);
+        ctx.stroke();
+      }
+
+      // Accessories
+      if (config.accessory === 'hat') {
+        ctx.fillStyle = '#333';
+        // Hat brim
+        ctx.beginPath();
+        ctx.ellipse(x, headY - 10 * s * ageScale, 14 * s * ageScale, 5 * s * ageScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Hat top
+        ctx.fillRect(x - 8 * s * ageScale, headY - 22 * s * ageScale, 16 * s * ageScale, 14 * s * ageScale);
+      } else if (config.accessory === 'glasses') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1.5 * s;
+        ctx.beginPath();
+        ctx.arc(x - 4 * s * ageScale, headY - 2 * s, 4 * s * ageScale, 0, Math.PI * 2);
+        ctx.arc(x + 4 * s * ageScale, headY - 2 * s, 4 * s * ageScale, 0, Math.PI * 2);
+        ctx.moveTo(x - 0.5 * s * ageScale, headY - 2 * s);
+        ctx.lineTo(x + 0.5 * s * ageScale, headY - 2 * s);
+        ctx.stroke();
+      } else if (config.accessory === 'bowtie') {
+        const bowY = y - bodyH + 5 * s + bobOffset;
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.moveTo(x, bowY);
+        ctx.lineTo(x - 8 * s, bowY - 4 * s);
+        ctx.lineTo(x - 8 * s, bowY + 4 * s);
+        ctx.lineTo(x, bowY);
+        ctx.lineTo(x + 8 * s, bowY - 4 * s);
+        ctx.lineTo(x + 8 * s, bowY + 4 * s);
+        ctx.closePath();
+        ctx.fill();
+        // Center knot
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.arc(x, bowY, 2 * s, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (config.accessory === 'headphones') {
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 3 * s;
+        ctx.beginPath();
+        ctx.arc(x, headY - 5 * s * ageScale, 14 * s * ageScale, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#555';
+        ctx.fillRect(x - 16 * s * ageScale, headY - 6 * s * ageScale, 6 * s * ageScale, 10 * s * ageScale);
+        ctx.fillRect(x + 10 * s * ageScale, headY - 6 * s * ageScale, 6 * s * ageScale, 10 * s * ageScale);
+      } else if (config.accessory === 'scarf') {
+        const scarfY = y - bodyH + 3 * s + bobOffset;
+        ctx.fillStyle = '#9b59b6';
+        ctx.beginPath();
+        ctx.ellipse(x, scarfY, bodyW/2 + 3*s, 5 * s, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Scarf tail
+        ctx.fillRect(x + 5 * s, scarfY, 5 * s, 20 * s);
+      }
+
+      // Smile
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1.5 * s;
+      ctx.beginPath();
+      ctx.arc(x, headY + 2 * s * ageScale, 4 * s * ageScale, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+
+    function shadeColor(color, percent) {
+      if (!color || color[0] !== '#') return color;
+      const num = parseInt(color.slice(1), 16);
+      const amt = Math.round(2.55 * percent);
+      const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+      const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+      const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+      return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+
+    // ========================================
+    // Agent Detail Modal
+    // ========================================
+
+    async function showAgentDetail(agentName, fromDb) {
+      // Create modal if it doesn't exist
+      let modal = document.getElementById('agent-detail-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'agent-detail-modal';
+        modal.className = 'fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden';
+        modal.innerHTML = `
+          <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-700">
+              <h2 id="agent-detail-title" class="text-xl font-bold text-gray-800 dark:text-white"></h2>
+              <button onclick="closeAgentDetail()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div id="agent-detail-content" class="p-6 overflow-y-auto flex-1">
+              <div class="text-center text-gray-500">Loading...</div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeAgentDetail();
+        });
+      }
+
+      modal.classList.remove('hidden');
+      document.getElementById('agent-detail-title').textContent = agentName;
+      document.getElementById('agent-detail-content').innerHTML = '<div class="text-center text-gray-500">Loading...</div>';
+
+      try {
+        // Fetch agent data and history in parallel
+        const [agentRes, historyRes, employmentRes] = await Promise.all([
+          fetch(`/api/agents/${encodeURIComponent(agentName)}?include=profile`),
+          fetch(`/api/agents/${encodeURIComponent(agentName)}/history`),
+          fetch(`/api/agents/${encodeURIComponent(agentName)}/employment`)
+        ]);
+
+        const agent = agentRes.ok ? await agentRes.json() : null;
+        const history = historyRes.ok ? await historyRes.json() : { cases: [] };
+        const employment = employmentRes.ok ? await employmentRes.json() : [];
+
+        if (!agent) {
+          // Agent not in DB - show minimal info from persona
+          const persona = allPersonas.find(p => p.name === agentName);
+          document.getElementById('agent-detail-content').innerHTML = `
+            <div class="text-center py-8">
+              <div class="text-6xl mb-4">👤</div>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">${agentName}</h3>
+              ${persona ? `
+                <p class="text-gray-600 dark:text-gray-300 mb-4">${persona.backstory}</p>
+                <div class="flex flex-wrap gap-2 justify-center">
+                  ${persona.traits.map(t => `<span class="px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm">${t}</span>`).join('')}
+                </div>
+              ` : ''}
+              <p class="text-sm text-gray-400 mt-4">This agent is not yet registered in the database.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const profile = agent.profile;
+
+        // Build the detail view
+        let html = '<div class="space-y-6">';
+
+        // Passport Section
+        html += `
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-lg p-4 border-2 border-indigo-200 dark:border-indigo-700">
+            <div class="flex items-start gap-4">
+              <div class="flex-shrink-0">
+                ${profile?.photoUrl
+                  ? `<img src="${profile.photoUrl}" alt="${agentName}" class="w-24 h-32 object-cover rounded border-2 border-white shadow">`
+                  : `<div class="w-24 h-32 bg-gray-200 dark:bg-slate-600 rounded border-2 border-white shadow flex items-center justify-center text-4xl">👤</div>`
+                }
+              </div>
+              <div class="flex-1">
+                <div class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Identity Document</div>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">${agentName}</h3>
+                ${profile ? `
+                  <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-3 text-sm">
+                    ${profile.dateOfBirth ? `<div><span class="text-gray-500 dark:text-gray-400">DOB:</span> <span class="text-gray-800 dark:text-white">${formatDate(profile.dateOfBirth)}</span></div>` : ''}
+                    ${profile.nationality ? `<div><span class="text-gray-500 dark:text-gray-400">Nationality:</span> <span class="text-gray-800 dark:text-white">${profile.nationality}</span></div>` : ''}
+                    ${profile.sex ? `<div><span class="text-gray-500 dark:text-gray-400">Sex:</span> <span class="text-gray-800 dark:text-white">${profile.sex}</span></div>` : ''}
+                    ${profile.heightCm ? `<div><span class="text-gray-500 dark:text-gray-400">Height:</span> <span class="text-gray-800 dark:text-white">${profile.heightCm}cm</span></div>` : ''}
+                    ${profile.placeOfBirthCity || profile.placeOfBirthCountry ? `<div class="col-span-2"><span class="text-gray-500 dark:text-gray-400">Birthplace:</span> <span class="text-gray-800 dark:text-white">${[profile.placeOfBirthCity, profile.placeOfBirthCountry].filter(Boolean).join(', ')}</span></div>` : ''}
+                  </div>
+                ` : '<p class="text-sm text-gray-500 dark:text-gray-400 mt-2">No profile data available</p>'}
+              </div>
+            </div>
+          </div>
+        `;
+
+        // Physical Features
+        if (profile && (profile.eyeColor || profile.hairColor || profile.build || profile.faceShape)) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Physical Features</h4>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                ${profile.eyeColor ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Eyes</div><div class="font-medium text-gray-800 dark:text-white">${profile.eyeColor}</div></div>` : ''}
+                ${profile.hairColor ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Hair</div><div class="font-medium text-gray-800 dark:text-white">${profile.hairColor}${profile.hairStyle ? ` (${profile.hairStyle})` : ''}</div></div>` : ''}
+                ${profile.build ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Build</div><div class="font-medium text-gray-800 dark:text-white">${profile.build}</div></div>` : ''}
+                ${profile.faceShape ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Face</div><div class="font-medium text-gray-800 dark:text-white">${profile.faceShape}</div></div>` : ''}
+                ${profile.glasses ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Glasses</div><div class="font-medium text-gray-800 dark:text-white">${profile.glasses}</div></div>` : ''}
+                ${profile.skinTone ? `<div class="bg-gray-50 dark:bg-slate-700 rounded p-2 text-center"><div class="text-xs text-gray-500 dark:text-gray-400">Skin</div><div class="font-medium text-gray-800 dark:text-white">${profile.skinTone}</div></div>` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        // Distinguishing Marks
+        if (profile && (profile.distinguishingFeatures?.length || profile.tattoos?.length || profile.scars?.length)) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Distinguishing Marks</h4>
+              <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                ${(profile.distinguishingFeatures || []).map(f => `<li>• ${f}</li>`).join('')}
+                ${(profile.tattoos || []).map(t => `<li>• Tattoo: ${t.description} (${t.location})</li>`).join('')}
+                ${(profile.scars || []).map(s => `<li>• Scar: ${s.description} (${s.location})</li>`).join('')}
+              </ul>
+            </div>
+          `;
+        }
+
+        // Backstory
+        if (profile?.backstory || agent.description) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Background</h4>
+              <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">${profile?.backstory || agent.description}</p>
+            </div>
+          `;
+        }
+
+        // Personality Traits
+        if (profile?.personalityTraits?.length) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Personality</h4>
+              <div class="flex flex-wrap gap-2">
+                ${profile.personalityTraits.map(t => `<span class="px-2 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm">${t}</span>`).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Employment History
+        if (employment.length > 0) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Employment History</h4>
+              <div class="space-y-2">
+                ${employment.map(e => `
+                  <div class="bg-gray-50 dark:bg-slate-700 rounded p-3 flex justify-between items-center">
+                    <div>
+                      <div class="font-medium text-gray-800 dark:text-white">${e.role}</div>
+                      <div class="text-sm text-gray-600 dark:text-gray-400">${e.companyName}</div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                      ${formatDate(e.startDate)}${e.endDate ? ` - ${formatDate(e.endDate)}` : ' - Present'}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Case History
+        if (history.cases?.length > 0) {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Case History (${history.totalCases} total)</h4>
+              <div class="space-y-2 max-h-48 overflow-y-auto">
+                ${history.cases.slice(0, 10).map(c => `
+                  <div class="bg-gray-50 dark:bg-slate-700 rounded p-3 flex justify-between items-center">
+                    <div>
+                      <div class="font-medium text-gray-800 dark:text-white">${c.scenario || 'Unknown Scenario'}</div>
+                      <div class="text-sm text-gray-600 dark:text-gray-400">${c.roleSummary || 'Participant'}</div>
+                    </div>
+                    <div class="text-right">
+                      <span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${getOutcomeClass(c.outcome)}">${c.outcome || 'pending'}</span>
+                      <div class="text-xs text-gray-400 mt-1">${formatDate(c.createdAt)}</div>
+                    </div>
+                  </div>
+                `).join('')}
+                ${history.cases.length > 10 ? `<p class="text-sm text-gray-500 dark:text-gray-400 text-center">...and ${history.cases.length - 10} more</p>` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          html += `
+            <div>
+              <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-2">Case History</h4>
+              <p class="text-sm text-gray-500 dark:text-gray-400 italic">No case history yet</p>
+            </div>
+          `;
+        }
+
+        html += '</div>';
+
+        document.getElementById('agent-detail-content').innerHTML = html;
+
+      } catch (error) {
+        console.error('Failed to load agent details:', error);
+        document.getElementById('agent-detail-content').innerHTML = `
+          <div class="text-center py-8 text-red-500">
+            Failed to load agent details: ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    function closeAgentDetail() {
+      const modal = document.getElementById('agent-detail-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return 'Unknown';
+      try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      } catch {
+        return dateStr;
+      }
+    }
+
+    function getOutcomeClass(outcome) {
+      switch (outcome) {
+        case 'agreed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        case 'consensus': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+        case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+        case 'timeout': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+        default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadScenarios();
+      await loadFurniture();  // Must load furniture data before locations can use it
+      loadLocations();
+      loadAgents();
+      // Initialize agent customizer
+      setTimeout(updateAgentPreview, 100);
+    });
+  </script>
+</body>
+</html>

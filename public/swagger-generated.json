@@ -1,0 +1,6658 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "StateLoop API",
+    "version": "1.0.0",
+    "description": "Stateless agent orchestration API for multi-party negotiations.\n\n## Core Concepts\n- **Cases**: Negotiation sessions with participants and options\n- **Participants**: Agents with private agendas\n- **Messages**: Proposals, counters, accepts, rejects\n- **Working Documents**: Collaborative documents agents can edit\n- **Input Documents**: Read-only reference materials\n\n## Agent Workflow\n1. GET `/api/cases/{id}/auto-play` - Get your task prompt\n2. Process the prompt and decide your response\n3. POST `/api/cases/{id}/submit` - Submit your response\n4. Repeat until case resolves\n\n## Documentation Resources\n- **API Docs (Swagger UI)**: [/api-docs](/api-docs) - Interactive API documentation\n- **Main UI**: [/](/index.html) - Negotiation visualization interface\n- **Config**: [/scenarios.html](/scenarios.html) - Scenario browser and agent customizer\n- **Companies**: [/companies.html](/companies.html) - Organization management\n- **Docs Viewer**: [/docs](/docs) - Markdown documentation browser",
+    "contact": {
+      "name": "StateLoop"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/api",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Cases",
+      "description": "Negotiation case management"
+    },
+    {
+      "name": "Agent Actions",
+      "description": "Agent task and response handling"
+    },
+    {
+      "name": "Documents",
+      "description": "Working and input documents"
+    },
+    {
+      "name": "Scenarios",
+      "description": "Scenario files and validation"
+    },
+    {
+      "name": "Simulation",
+      "description": "Automated case simulation"
+    },
+    {
+      "name": "Agents",
+      "description": "Agent registry and profiles"
+    },
+    {
+      "name": "Companies",
+      "description": "Organization management"
+    },
+    {
+      "name": "Buildings",
+      "description": "Company building management"
+    },
+    {
+      "name": "Rooms",
+      "description": "Building room management"
+    },
+    {
+      "name": "Policies",
+      "description": "Company policy management"
+    },
+    {
+      "name": "Employees",
+      "description": "Employee management"
+    },
+    {
+      "name": "Workflows",
+      "description": "Multi-stage workflow orchestration"
+    },
+    {
+      "name": "Goals",
+      "description": "Goal-driven dynamic workflows"
+    },
+    {
+      "name": "Admin",
+      "description": "System administration and logging"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "API welcome and discovery",
+        "description": "Returns API overview, active cases, and available endpoints.",
+        "responses": {
+          "200": {
+            "description": "API welcome message with active cases list",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Create a new case",
+        "description": "Creates a new negotiation case from a scenario description. The scenario text describes the situation, participants, and options. After creation, call `/api/cases/{id}/setup` to initialize agents and options via AI.",
+        "responses": {
+          "201": {
+            "description": "Case created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - missing required fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCaseRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "List all cases",
+        "description": "Returns all negotiation cases in the system. Each case includes its current status, participants, and outcome if resolved.",
+        "responses": {
+          "200": {
+            "description": "Array of all cases",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Case"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}": {
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get case details",
+        "description": "Returns full details of a specific case including scenario, participants, options, message history, and resolution status.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full case details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Case"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/history": {
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get conversation history for playback",
+        "description": "Returns the complete conversation history optimized for UI playback. Includes message sequence, speaker information, and timing data.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Complete conversation timeline"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/next-task": {
+      "get": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Get next task for polling",
+        "description": "Returns the next available task if one exists. Used by automated systems to poll for work. Prefer `/auto-play` for LLM-driven workflows. Returns 204 No Content if no task is available.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "agentId",
+            "in": "query",
+            "description": "Agent ID to get task for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task available with agent context"
+          },
+          "204": {
+            "description": "No task available"
+          },
+          "400": {
+            "description": "Missing or invalid agentId"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/submit": {
+      "post": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Submit agent response",
+        "description": "Submit your response to the current task. The response includes your message type, content, and optional document updates. Returns the next agent prompt if the case is still active.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response accepted, includes next agent prompt if case active"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Case resolved or not your turn"
+          },
+          "410": {
+            "description": "Task expired"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/resolve": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Manually resolve case",
+        "description": "Manually resolve a case with a specific outcome. Use this for edge cases or to force resolution.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case resolved successfully"
+          },
+          "400": {
+            "description": "Missing outcome"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Case already resolved"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "outcome": {
+                    "example": "any"
+                  },
+                  "selectedOptionId": {
+                    "example": "any"
+                  },
+                  "summary": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/boss-message": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Send message to agents",
+        "description": "Send a facilitator message to agents. If the case is resolved, this will reopen it so agents can respond to the new instruction.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Message sent successfully"
+          },
+          "400": {
+            "description": "Missing content"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "example": "any"
+                  },
+                  "targetAgent": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/auto-play": {
+      "get": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Get agent prompt for current turn",
+        "description": "Returns a formatted prompt for the current agents turn. The prompt includes the agents private agenda, conversation history, available options, working documents, and instructions for responding.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent prompt (text/plain/)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No task available"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Get agent prompt for current turn",
+        "description": "Returns a formatted prompt for the current agents turn. The prompt includes the agents private agenda, conversation history, available options, working documents, and instructions for responding.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent prompt (text/plain/)",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No task available"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/auto-play": {
+      "get": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Auto-play most recent active case",
+        "description": "Convenience endpoint that finds the most recent active case and returns its agent prompt.",
+        "parameters": [
+          {
+            "name": "id",
+            "description": "Case ID",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent prompt for most recent active case",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No task available"
+          },
+          "404": {
+            "description": "No active cases"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/run": {
+      "post": {
+        "tags": [
+          "Simulation"
+        ],
+        "summary": "Run case to completion",
+        "description": "Pre-runs the entire negotiation using built-in simulation. Agents are simulated based on their agendas and agreeability. Results are stored for later playback.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "maxRounds",
+            "in": "query",
+            "description": "Maximum rounds before timeout (default: 20)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case run completed with status and log"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/agent-prompt": {
+      "get": {
+        "tags": [
+          "Agent Actions"
+        ],
+        "summary": "Get agent prompt for specific agent",
+        "description": "Returns a plain text prompt with full instructions for a specific agent. Use this when you know which agent should respond.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "agentId",
+            "in": "query",
+            "description": "Agent participant ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent prompt",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing agentId or agent not in case"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/set-appearance": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Set agent appearance",
+        "description": "Set or update an agents visual appearance. Creates the participant if it does not exist.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appearance set successfully"
+          },
+          "400": {
+            "description": "Missing agentName"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agentName": {
+                    "example": "any"
+                  },
+                  "appearance": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/add-option": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Add an option to case",
+        "description": "Add a new option/choice to the case. Returns existing option if name already exists.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Option added or already exists"
+          },
+          "400": {
+            "description": "Missing name"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "category": {
+                    "example": "any"
+                  },
+                  "priceRange": {
+                    "example": "any"
+                  },
+                  "features": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/reset": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Reset a case",
+        "description": "Reset a case to start fresh. Soft reset clears messages only. Full reset (?full=true) clears everything and regenerates on next auto-play.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "full",
+            "in": "query",
+            "description": "Full reset including participants and options",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case reset successfully"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/reopen": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Reopen a resolved case",
+        "description": "Reopen a resolved case to continue discussion. Increases MAX_ROUNDS to prevent immediate timeout. Returns immediately if case is already active.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Case reopened successfully"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/reset": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Clear all data",
+        "description": "Deletes all cases, agents, companies, and logs from the database. Use with caution.",
+        "responses": {
+          "200": {
+            "description": "Database cleared successfully"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/logs": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Get request logs",
+        "description": "Returns paginated API request logs for debugging and monitoring.",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Max logs to return (default: 50)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Offset for pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "caseId",
+            "in": "query",
+            "description": "Filter by case ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request logs with pagination info"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/validate-scenario": {
+      "post": {
+        "tags": [
+          "Scenarios"
+        ],
+        "summary": "Validate scenario text",
+        "description": "Validates scenario text format before creating a case. Returns errors, warnings, and extracted data.",
+        "responses": {
+          "200": {
+            "description": "Validation results with extracted agents, options, etc."
+          },
+          "400": {
+            "description": "Missing scenario text"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scenario": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/furniture": {
+      "get": {
+        "tags": [
+          "Scenarios"
+        ],
+        "summary": "Get furniture catalog",
+        "description": "Returns the furniture catalog for location setup. Used by AI to select appropriate furniture for different location types.",
+        "responses": {
+          "200": {
+            "description": "Furniture catalog organized by location type"
+          },
+          "404": {
+            "description": "Furniture catalog not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/scenarios": {
+      "get": {
+        "tags": [
+          "Scenarios"
+        ],
+        "summary": "List all scenarios",
+        "description": "Returns all scenario files from the scenarios folder with metadata (name, location, agent count, etc.).",
+        "responses": {
+          "200": {
+            "description": "Array of scenario metadata"
+          },
+          "404": {
+            "description": "Scenarios directory not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/scenarios/{name}": {
+      "get": {
+        "tags": [
+          "Scenarios"
+        ],
+        "summary": "Get scenario content",
+        "description": "Returns the full text content of a specific scenario file.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Scenario filename (with or without .txt extension)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scenario content as plain text",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid path"
+          },
+          "404": {
+            "description": "Scenario not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/scenarios/{name}/load": {
+      "post": {
+        "tags": [
+          "Scenarios"
+        ],
+        "summary": "Load scenario as new case",
+        "description": "Creates a new case from a scenario file. This is a convenience endpoint that reads the scenario and creates a case in one step.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Scenario filename (with or without .txt extension)"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Case created from scenario"
+          },
+          "400": {
+            "description": "Invalid path"
+          },
+          "404": {
+            "description": "Scenario not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "List all agents",
+        "description": "Returns all agents from the global registry with their appearance and metadata.",
+        "responses": {
+          "200": {
+            "description": "Array of agents"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents/{name}": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get agent by name",
+        "description": "Returns a specific agent by name. Use ?include=profile to include detailed profile.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent details"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Delete agent",
+        "description": "Deletes an agent from the global registry.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent deleted"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents/{name}/profile": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get agent profile",
+        "description": "Returns the detailed profile for an agent including personality traits, backstory, etc.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent profile"
+          },
+          "404": {
+            "description": "Agent or profile not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Create or update agent profile",
+        "description": "Creates or updates an agents detailed profile. Use ?syncAppearance=true to update visual appearance from profile.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          },
+          {
+            "name": "syncAppearance",
+            "in": "query",
+            "description": "Sync profile to visual appearance",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile created/updated"
+          },
+          "404": {
+            "description": "Agent not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Delete agent profile",
+        "description": "Deletes an agents detailed profile.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Profile deleted"
+          },
+          "404": {
+            "description": "Agent or profile not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents/{name}/image-prompt": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Generate image prompt",
+        "description": "Generates an image generation prompt based on the agents profile.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image prompt for avatar generation"
+          },
+          "404": {
+            "description": "Agent or profile not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents/{name}/character-description": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get character description",
+        "description": "Generates a character description for use in LLM prompts.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Character description"
+          },
+          "404": {
+            "description": "Agent or profile not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/agents": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Create agent in case",
+        "description": "Creates a new agent participant in the case. Used by AI during setup.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Agent created"
+          },
+          "400": {
+            "description": "Missing name"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Agent already exists"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "role": {
+                    "example": "any"
+                  },
+                  "agenda": {
+                    "example": "any"
+                  },
+                  "agreeability": {
+                    "example": "any"
+                  },
+                  "appearance": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/options": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Create option in case",
+        "description": "Creates a new option/choice in the case. Used by AI during setup.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Option created"
+          },
+          "400": {
+            "description": "Missing name"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "description": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/setup": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "AI setup case",
+        "description": "AI submits full setup analysis including agents, options, documents, and first message. This bulk-creates all entities needed for the case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Setup complete, returns next agent prompt"
+          },
+          "400": {
+            "description": "Validation error or case already setup"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/input-documents": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Add input document",
+        "description": "Adds a read-only input document to the case for reference.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document created"
+          },
+          "400": {
+            "description": "Missing name or content"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Document already exists"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "content": {
+                    "example": "any"
+                  },
+                  "source": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "List input documents",
+        "description": "Lists all input (read-only) documents for the case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of input documents"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/input-documents/{name}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get input document",
+        "description": "Returns a specific input document by name.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document content"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/documents": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Create working document",
+        "description": "Creates a new collaborative working document that agents can edit.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Document created"
+          },
+          "400": {
+            "description": "Missing name"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Document already exists"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "content": {
+                    "example": "any"
+                  },
+                  "docType": {
+                    "example": "any"
+                  },
+                  "template": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "List working documents",
+        "description": "Lists all working (collaborative) documents for the case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of working documents"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/documents/{name}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get working document",
+        "description": "Returns a specific working document by name.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document content"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Replace document content",
+        "description": "Fully replaces the content of a working document.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document updated"
+          },
+          "400": {
+            "description": "Missing content"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "example": "any"
+                  },
+                  "agentId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Partial document update",
+        "description": "Partially updates a document (append, prepend, or replace_section).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Document updated"
+          },
+          "400": {
+            "description": "Missing action or content"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "example": "any"
+                  },
+                  "content": {
+                    "example": "any"
+                  },
+                  "section": {
+                    "example": "any"
+                  },
+                  "agentId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cases/{id}/documents/{name}/preview": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Preview document as raw HTML",
+        "description": "Serves the document content directly as text/html, useful for previewing HTML documents in a browser tab.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw document content served as HTML"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/documents/{name}/history": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get document edit history",
+        "description": "Returns the complete edit history for a working document.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Document name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit history"
+          },
+          "404": {
+            "description": "Document not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/images": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Create image",
+        "description": "Creates a new SVG image in the case. The SVG content is validated for security.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Image created"
+          },
+          "400": {
+            "description": "Invalid SVG or validation error"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "409": {
+            "description": "Image already exists"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "content": {
+                    "example": "any"
+                  },
+                  "agentId": {
+                    "example": "any"
+                  },
+                  "prompt": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "List images",
+        "description": "Lists all images in the case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of images"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/images/{name}": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Get image",
+        "description": "Returns image metadata and content by name.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Image name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image data"
+          },
+          "404": {
+            "description": "Image not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Replace image",
+        "description": "Replaces image content. The new SVG is validated.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Image name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image updated"
+          },
+          "400": {
+            "description": "Invalid SVG"
+          },
+          "404": {
+            "description": "Image not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "example": "any"
+                  },
+                  "agentId": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Delete image",
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Image name"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Image deleted"
+          },
+          "404": {
+            "description": "Image not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/images/{name}/raw": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Get raw SVG",
+        "description": "Returns raw SVG content with proper content-type.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Image name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Raw SVG"
+          },
+          "404": {
+            "description": "Image not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/images/{name}/history": {
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Get image history",
+        "description": "Returns the edit history for an image.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Image name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Edit history"
+          },
+          "404": {
+            "description": "Image not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/output": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Set task output",
+        "description": "Sets the final output/deliverable for a document-type task.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Output set"
+          },
+          "400": {
+            "description": "Missing content"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "example": "any"
+                  },
+                  "generatedBy": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get task output",
+        "description": "Returns the final output/deliverable for a document-type task.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Task output"
+          },
+          "404": {
+            "description": "Case or output not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/agents/{name}/history": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Get agent case history",
+        "description": "Returns the history of cases this agent has participated in across all negotiations.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent case history"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Log agent participation",
+        "description": "Records an agent participation entry. Usually called automatically when agents join cases.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "History entry created"
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "caseId",
+                  "participantId"
+                ],
+                "properties": {
+                  "caseId": {
+                    "type": "string",
+                    "description": "Case ID the agent participated in"
+                  },
+                  "participantId": {
+                    "type": "string",
+                    "description": "Participant ID in the case"
+                  },
+                  "scenario": {
+                    "type": "string",
+                    "description": "Brief scenario description"
+                  },
+                  "roleSummary": {
+                    "type": "string",
+                    "description": "Summary of agent role"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "List all companies",
+        "description": "Returns a list of all registered companies/organizations.",
+        "responses": {
+          "200": {
+            "description": "List of companies"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Create a new company",
+        "description": "Creates a new company/organization that can be used in scenarios.",
+        "responses": {
+          "201": {
+            "description": "Company created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "409": {
+            "description": "Company already exists"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Company name"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get company details",
+        "description": "Returns a company with all its related data including buildings, rooms, policies, and employees.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company with relations"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Update company",
+        "description": "Updates a company details such as name, industry, size, or description.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company updated"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyRequest"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Delete company",
+        "description": "Deletes a company and all its related data (buildings, rooms, policies, employees).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Company deleted"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/companies/{id}/auto-play": {
+      "get": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Get company setup prompt",
+        "description": "Returns an AI prompt for setting up company details like buildings, rooms, policies, and employees.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Setup prompt text"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/companies/{id}/setup": {
+      "post": {
+        "tags": [
+          "Companies"
+        ],
+        "summary": "Bulk company setup",
+        "description": "AI submits bulk setup for a company including buildings, rooms, policies, and employees.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Setup complete"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanySetupRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/buildings": {
+      "get": {
+        "tags": [
+          "Buildings"
+        ],
+        "summary": "List company buildings",
+        "description": "Returns all buildings belonging to a company.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of buildings"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Buildings"
+        ],
+        "summary": "Create a building",
+        "description": "Creates a new building within a company.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Building created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Building name"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "country": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "locationType": {
+                    "type": "string"
+                  },
+                  "defaultFurniture": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/buildings/{buildingId}": {
+      "get": {
+        "tags": [
+          "Buildings"
+        ],
+        "summary": "Get building details",
+        "description": "Returns a building with all its rooms.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "buildingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Building ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Building with rooms"
+          },
+          "404": {
+            "description": "Building not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Buildings"
+        ],
+        "summary": "Delete building",
+        "description": "Deletes a building and all its rooms.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "buildingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Building ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Building deleted"
+          },
+          "404": {
+            "description": "Building not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/companies/{id}/buildings/{buildingId}/rooms": {
+      "get": {
+        "tags": [
+          "Rooms"
+        ],
+        "summary": "List rooms in building",
+        "description": "Returns all rooms within a building.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "buildingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Building ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of rooms"
+          },
+          "404": {
+            "description": "Building not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Rooms"
+        ],
+        "summary": "Create a room",
+        "description": "Creates a new room within a building.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "buildingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Building ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Room created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Building not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "roomType"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Room name"
+                  },
+                  "roomType": {
+                    "type": "string",
+                    "description": "Type of room (office, meeting_room, etc.)"
+                  },
+                  "floor": {
+                    "type": "number"
+                  },
+                  "capacity": {
+                    "type": "number"
+                  },
+                  "furniture": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/rooms/{roomId}": {
+      "get": {
+        "tags": [
+          "Rooms"
+        ],
+        "summary": "Get room details",
+        "description": "Returns room details including furniture and capacity.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Room ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Room details"
+          },
+          "404": {
+            "description": "Room not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Rooms"
+        ],
+        "summary": "Delete room",
+        "description": "Deletes a room from a building.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "roomId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Room ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Room deleted"
+          },
+          "404": {
+            "description": "Room not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/policy-categories": {
+      "get": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "List policy categories",
+        "description": "Returns all available policy categories (Leave, Conduct, Safety, etc.).",
+        "responses": {
+          "200": {
+            "description": "List of categories"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/companies/{id}/policies": {
+      "get": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "List company policies",
+        "description": "Returns all policies belonging to a company with their categories.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of policies"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Create a policy",
+        "description": "Creates a new HR policy for a company.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Policy created"
+          },
+          "400": {
+            "description": "Invalid request or category not found"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "categoryId",
+                  "title",
+                  "summary",
+                  "fullText"
+                ],
+                "properties": {
+                  "categoryId": {
+                    "type": "string",
+                    "description": "Policy category ID"
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Policy title"
+                  },
+                  "summary": {
+                    "type": "string",
+                    "description": "Brief summary"
+                  },
+                  "fullText": {
+                    "type": "string",
+                    "description": "Full policy text"
+                  },
+                  "effectiveDate": {
+                    "type": "string",
+                    "description": "When policy takes effect"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/companies/{id}/policies/{policyId}": {
+      "get": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Get policy details",
+        "description": "Returns full policy details including full text.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Policy ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy details"
+          },
+          "404": {
+            "description": "Policy not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Delete policy",
+        "description": "Deletes a policy from a company.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          },
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Policy ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Policy deleted"
+          },
+          "404": {
+            "description": "Policy not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/companies/{id}/employees": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "summary": "List company employees",
+        "description": "Returns all employees belonging to a company.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of employees"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Employees"
+        ],
+        "summary": "Add an employee",
+        "description": "Adds a new employee to a company, linking an agent to a job title.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Company ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Employee created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Company not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "agentName",
+                  "jobTitle"
+                ],
+                "properties": {
+                  "agentName": {
+                    "type": "string",
+                    "description": "Agent name"
+                  },
+                  "jobTitle": {
+                    "type": "string",
+                    "description": "Job title"
+                  },
+                  "department": {
+                    "type": "string"
+                  },
+                  "managerAgentName": {
+                    "type": "string"
+                  },
+                  "startDate": {
+                    "type": "string"
+                  },
+                  "employmentType": {
+                    "type": "string"
+                  },
+                  "officeRoomId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agents/{name}/employment": {
+      "get": {
+        "tags": [
+          "Employees"
+        ],
+        "summary": "Get agent employment history",
+        "description": "Returns all employment records for an agent across all companies.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Agent name"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Employment history"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/company": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Associate case with company",
+        "description": "Links a case to a company context, optionally specifying a building and room.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Association created"
+          },
+          "400": {
+            "description": "Invalid request or company not found"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "companyId"
+                ],
+                "properties": {
+                  "companyId": {
+                    "type": "string",
+                    "description": "Company ID"
+                  },
+                  "buildingId": {
+                    "type": "string",
+                    "description": "Optional building ID"
+                  },
+                  "roomId": {
+                    "type": "string",
+                    "description": "Optional room ID"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get case company context",
+        "description": "Returns the company, building, room, and available policies for a case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Company context"
+          },
+          "404": {
+            "description": "Case not found or no company association"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/policies": {
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get case policies",
+        "description": "Returns policies available to a case through its company association.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of policies"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/policies/{policyId}": {
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Get specific policy for case",
+        "description": "Returns full policy text for a policy available to the case.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          },
+          {
+            "name": "policyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Policy ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Policy details"
+          },
+          "404": {
+            "description": "Case, company context, or policy not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/cases/{id}/agent-roles": {
+      "post": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "Create per-case agent role",
+        "description": "Assigns a temporary role to a non-employee participant (visitor, contractor, etc.).",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Role created"
+          },
+          "400": {
+            "description": "Invalid request or participant not found"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "participantId",
+                  "roleType"
+                ],
+                "properties": {
+                  "participantId": {
+                    "type": "string",
+                    "description": "Participant ID"
+                  },
+                  "roleType": {
+                    "type": "string",
+                    "enum": [
+                      "visitor",
+                      "contractor",
+                      "temp",
+                      "consultant"
+                    ]
+                  },
+                  "roleTitle": {
+                    "type": "string"
+                  },
+                  "department": {
+                    "type": "string"
+                  },
+                  "accessLevel": {
+                    "type": "string",
+                    "enum": [
+                      "full",
+                      "limited",
+                      "escorted"
+                    ]
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Cases"
+        ],
+        "summary": "List per-case agent roles",
+        "description": "Returns all per-case roles (visitor, contractor, etc.) assigned to participants.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Case ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of roles"
+          },
+          "404": {
+            "description": "Case not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-templates": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "List workflow templates",
+        "description": "Returns all available workflow templates that can be used to create workflows.",
+        "responses": {
+          "200": {
+            "description": "List of workflow templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "stageCount": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow-templates/{name}": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Get workflow template",
+        "description": "Returns details of a specific workflow template including its stages.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Template name/ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow template details"
+          },
+          "404": {
+            "description": "Template not found"
+          }
+        }
+      }
+    },
+    "/workflows": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "List all workflows",
+        "description": "Returns all workflows with their current status.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "enum": {
+                  "type": "array",
+                  "example": [
+                    "pending",
+                    "active",
+                    "completed",
+                    "failed"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of workflows"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Create a workflow",
+        "description": "Creates a new workflow, optionally from a template.",
+        "responses": {
+          "201": {
+            "description": "Workflow created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Workflow name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Workflow description"
+                  },
+                  "templateName": {
+                    "type": "string",
+                    "description": "Template to use (optional)"
+                  },
+                  "stages": {
+                    "type": "array",
+                    "description": "Custom stages (if not using template)",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "collaborative",
+                            "solo",
+                            "review"
+                          ]
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{id}": {
+      "get": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Get workflow details",
+        "description": "Returns workflow with its stages and current status.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow details with stages"
+          },
+          "404": {
+            "description": "Workflow not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Delete a workflow",
+        "description": "Deletes a workflow and all its stages.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Workflow deleted"
+          },
+          "404": {
+            "description": "Workflow not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflows/{id}/start": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Start a workflow",
+        "description": "Activates a pending workflow and sets its inputs.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow started"
+          },
+          "400": {
+            "description": "Workflow cannot be started"
+          },
+          "404": {
+            "description": "Workflow not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "inputs": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "description": "Input parameters for the workflow"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{id}/stages/{stageId}/complete": {
+      "post": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Complete a workflow stage",
+        "description": "Marks a stage as completed and advances to the next stage.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow ID"
+          },
+          {
+            "name": "stageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Stage ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stage completed, workflow updated"
+          },
+          "400": {
+            "description": "Stage cannot be completed"
+          },
+          "404": {
+            "description": "Workflow or stage not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflows/{id}/outputs": {
+      "put": {
+        "tags": [
+          "Workflows"
+        ],
+        "summary": "Set workflow outputs",
+        "description": "Sets or updates the workflow outputs.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Outputs updated"
+          },
+          "404": {
+            "description": "Workflow not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goals": {
+      "get": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "List all goals",
+        "description": "Returns all goals with their current status.",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "required": false,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "string"
+                },
+                "enum": {
+                  "type": "array",
+                  "example": [
+                    "pending",
+                    "planning",
+                    "executing",
+                    "completed",
+                    "failed"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of goals"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Create a goal",
+        "description": "Creates a new high-level goal that can be decomposed into a workflow.",
+        "responses": {
+          "201": {
+            "description": "Goal created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "description"
+                ],
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "Goal description"
+                  },
+                  "context": {
+                    "type": "string",
+                    "description": "Additional context for planning"
+                  },
+                  "constraints": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Constraints to consider"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goals/{id}": {
+      "get": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Get goal details",
+        "description": "Returns goal with its plan and associated workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Goal details"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Delete a goal",
+        "description": "Deletes a goal. Associated workflow is not deleted.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Goal deleted"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/goals/{id}/plan": {
+      "put": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Set goal plan",
+        "description": "Sets the execution plan for a goal.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Plan set"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "steps"
+                ],
+                "properties": {
+                  "steps": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "description": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "collaborative",
+                            "solo",
+                            "review"
+                          ]
+                        },
+                        "agentCount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  },
+                  "estimatedDuration": {
+                    "type": "string"
+                  },
+                  "risks": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/goals/{id}/execute": {
+      "post": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Execute goal",
+        "description": "Creates a workflow from the goal plan and starts execution.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow created and started"
+          },
+          "400": {
+            "description": "Goal has no plan or already executing"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/goals/{id}/output": {
+      "put": {
+        "tags": [
+          "Goals"
+        ],
+        "summary": "Set goal output",
+        "description": "Sets the final output/result of the goal.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Goal ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Output set"
+          },
+          "404": {
+            "description": "Goal not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "output"
+                ],
+                "properties": {
+                  "output": {
+                    "type": "string",
+                    "description": "Goal output/result"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow-designs": {
+      "get": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "List all workflow designs",
+        "description": "Returns all workflow designs with their status.",
+        "responses": {
+          "200": {
+            "description": "List of workflow designs"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Create a workflow design",
+        "description": "Creates a new workflow design for the visual workflow designer.",
+        "responses": {
+          "201": {
+            "description": "Workflow design created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Workflow name"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Workflow description"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}": {
+      "get": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Get workflow design",
+        "description": "Returns a workflow design with all its nodes and edges.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow design with nodes and edges"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Update workflow design",
+        "description": "Updates the name, description, or canvas state of a workflow design.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow design updated"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "canvasState": {
+                    "type": "object",
+                    "properties": {
+                      "panX": {
+                        "type": "number"
+                      },
+                      "panY": {
+                        "type": "number"
+                      },
+                      "zoom": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Delete workflow design",
+        "description": "Deletes a workflow design and all its nodes and edges.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Workflow design deleted"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/nodes": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Add node to workflow",
+        "description": "Adds a new scenario node to the workflow design. Maximum 5 nodes per workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Node added"
+          },
+          "400": {
+            "description": "Invalid request or max nodes reached"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "scenarioName",
+                  "positionX",
+                  "positionY"
+                ],
+                "properties": {
+                  "scenarioName": {
+                    "type": "string",
+                    "description": "Name of the scenario file"
+                  },
+                  "label": {
+                    "type": "string",
+                    "description": "Display label for the node"
+                  },
+                  "positionX": {
+                    "type": "number",
+                    "description": "X position on canvas"
+                  },
+                  "positionY": {
+                    "type": "number",
+                    "description": "Y position on canvas"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/nodes/{nid}": {
+      "put": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Update node",
+        "description": "Updates the position or label of a node.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Node ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node updated"
+          },
+          "404": {
+            "description": "Node not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "positionX": {
+                    "type": "number"
+                  },
+                  "positionY": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Remove node",
+        "description": "Removes a node and all connected edges from the workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Node ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Node removed"
+          },
+          "404": {
+            "description": "Node not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/edges": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Create edge",
+        "description": "Creates an edge connecting two nodes in the workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Edge created"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Workflow or node not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sourceNodeId",
+                  "targetNodeId"
+                ],
+                "properties": {
+                  "sourceNodeId": {
+                    "type": "string",
+                    "description": "ID of the source node"
+                  },
+                  "targetNodeId": {
+                    "type": "string",
+                    "description": "ID of the target node"
+                  },
+                  "documentMapping": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "source": {
+                          "type": "string"
+                        },
+                        "target": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "description": "Document mappings between nodes"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/edges/{eid}": {
+      "delete": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Remove edge",
+        "description": "Removes an edge from the workflow.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "eid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Edge ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Edge removed"
+          },
+          "404": {
+            "description": "Edge not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/reset": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Reset workflow",
+        "description": "Resets all nodes to pending and workflow to draft status, allowing it to be run again.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow reset"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/run": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Start workflow execution",
+        "description": "Starts executing the workflow from entry nodes. The workflow will pause after each node completes for review.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow started"
+          },
+          "400": {
+            "description": "Workflow is empty or not ready"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/continue": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Continue workflow execution",
+        "description": "Continues a paused workflow to the next ready nodes.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workflow continued"
+          },
+          "400": {
+            "description": "Workflow is not paused"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/status": {
+      "get": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Get execution status",
+        "description": "Returns the current execution status of the workflow including completed, running, and pending nodes.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Execution status"
+          },
+          "404": {
+            "description": "Workflow design not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/nodes/{nid}/rerun": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Re-run a node",
+        "description": "Resets a node to pending status so it can be run again.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Node ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node reset for re-run"
+          },
+          "404": {
+            "description": "Node not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/nodes/{nid}/execute": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Execute a ready node",
+        "description": "Creates a case for the node scenario and returns the auto-play prompt. The node must be in ready status.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Node ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node execution started, returns case and prompt"
+          },
+          "400": {
+            "description": "Node is not ready"
+          },
+          "404": {
+            "description": "Node or scenario not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/workflow-designs/{id}/nodes/{nid}/complete": {
+      "post": {
+        "tags": [
+          "Workflow Designer"
+        ],
+        "summary": "Complete a node",
+        "description": "Marks a running node as completed. The workflow will pause for review.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Workflow Design ID"
+          },
+          {
+            "name": "nid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Node ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node completed"
+          },
+          "404": {
+            "description": "Node not found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Case": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Unique case identifier"
+                  }
+                }
+              },
+              "scenario": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Scenario description text"
+                  }
+                }
+              },
+              "status": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "active",
+                      "resolved"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Case status"
+                  }
+                }
+              },
+              "outcome": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Resolution outcome (agreed, failed, etc.)"
+                  }
+                }
+              },
+              "currentTurn": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "ID of participant whose turn it is"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              },
+              "updatedAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              },
+              "resolvedAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Participant": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Unique participant identifier"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Agent name"
+                  }
+                }
+              },
+              "preferences": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Appearance and voice settings"
+                  }
+                }
+              },
+              "constraints": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "isPayer": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  }
+                }
+              },
+              "agreeability": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "minimum": {
+                    "type": "number",
+                    "example": 0
+                  },
+                  "maximum": {
+                    "type": "number",
+                    "example": 100
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Option": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Unique option identifier"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Option name"
+                  }
+                }
+              },
+              "category": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "priceRange": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "features": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "author": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Participant ID of message author"
+                  }
+                }
+              },
+              "type": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "proposal",
+                      "counter",
+                      "accept",
+                      "reject",
+                      "message"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Message content"
+                  }
+                }
+              },
+              "thoughts": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Agent internal reasoning"
+                  }
+                }
+              },
+              "optionId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Referenced option ID"
+                  }
+                }
+              },
+              "timestamp": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateCaseRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "scenario",
+              "participants"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "scenario": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Scenario description text"
+                  }
+                }
+              },
+              "participants": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      }
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Initial participants (can be empty for AI setup)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SubmitRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "taskId",
+              "agentId",
+              "response"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "taskId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Task ID from auto-play prompt"
+                  }
+                }
+              },
+              "agentId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Participant ID submitting response"
+                  }
+                }
+              },
+              "response": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "required": {
+                    "type": "array",
+                    "example": [
+                      "type",
+                      "content"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          },
+                          "enum": {
+                            "type": "array",
+                            "example": [
+                              "proposal",
+                              "counter",
+                              "accept",
+                              "reject",
+                              "message"
+                            ],
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "content": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Spoken message content"
+                          }
+                        }
+                      },
+                      "thoughts": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Internal reasoning (visible to observers)"
+                          }
+                        }
+                      },
+                      "optionId": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Option ID if proposing/accepting"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "documentUpdates": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "document": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "action": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              },
+                              "enum": {
+                                "type": "array",
+                                "example": [
+                                  "append",
+                                  "prepend",
+                                  "replace",
+                                  "replace_section"
+                                ],
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "content": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "section": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "SetupRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "setup",
+              "firstAgent"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "setup": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "title": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "location": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "object"
+                          }
+                        }
+                      },
+                      "icon": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "taskType": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          },
+                          "enum": {
+                            "type": "array",
+                            "example": [
+                              "options",
+                              "document",
+                              "both"
+                            ],
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      },
+                      "maxRounds": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "number"
+                          }
+                        }
+                      },
+                      "agents": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "array"
+                          },
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "options": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "array"
+                          },
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "inputDocuments": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "array"
+                          },
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "workingDocuments": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "array"
+                          },
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "object"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "publicInfo": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "rules": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "firstAgent": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "thoughts": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "message": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "industry": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "size": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Building": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "companyId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "address": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "city": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "locationType": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Room": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "buildingId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "companyId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "roomType": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "floor": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "capacity": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "number"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "companyId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "categoryId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "title": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "fullText": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "effectiveDate": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Employee": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "companyId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "agentName": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "jobTitle": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "department": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "employmentType": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "WorkingDocument": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "caseId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "docType": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "lastEditedBy": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              },
+              "updatedAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "InputDocument": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "caseId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "source": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "object"
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      },
+                      "message": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "example": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "message": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "hint": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "CaseId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Case ID",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "CompanyId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Company ID",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "AgentName": {
+        "name": "name",
+        "in": "path",
+        "required": true,
+        "description": "Agent name",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "responses": {
+      "CaseNotFound": {
+        "description": "Case not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "CompanyNotFound": {
+        "description": "Company not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "description": "Validation error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      }
+    }
+  }
+}

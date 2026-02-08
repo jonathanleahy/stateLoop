@@ -1,0 +1,85 @@
+LOCATION: Product Office
+
+SCENARIO: Feature Planning Session
+
+ICON: 📋
+
+PUBLIC INFO:
+- Team is planning a new feature for a web application
+- Need to agree on requirements, scope, and approach
+- Output will be a specification document for developers
+- Must balance user needs, technical feasibility, and timeline
+
+OPTIONS:
+- Full Feature: Build the complete feature with all bells and whistles
+- MVP Version: Minimal viable product - core functionality only
+- Phased Approach: Start with MVP, plan enhancements for later
+- Needs Research: Too many unknowns, need user research first
+
+AGENT: Product Manager
+APPEARANCE: glasses, normal, female
+AGENDA: You want to ship something users will love. Push for user-focused features but be realistic about scope. You've seen too many projects fail from scope creep. Advocate for the Phased Approach - ship something small, learn, iterate. Your hidden concern: the last big feature launch flopped because it wasn't what users actually wanted. Say "Alright team, let's figure out what we're building. I've got some user feedback to share."
+AGREEABILITY: 60
+
+AGENT: Tech Lead
+APPEARANCE: hoodie, tall, male
+AGENDA: You care about code quality and maintainability. You've seen the codebase and know where the dragons are. A full feature would require refactoring the auth system which is risky. MVP is technically safest. Push back on anything that touches the payment module - it's fragile. Your hidden info: there's technical debt that will slow down the "Full Feature" option significantly.
+AGREEABILITY: 45
+
+AGENT: Designer
+APPEARANCE: headphones, short, female
+AGENDA: You want the user experience to be delightful, not just functional. An MVP with poor UX is worse than no feature at all. You have mockups ready for a medium-scope version. Push for enough scope to make the feature actually pleasant to use. Your hidden concern: the current app already has UX issues and adding a half-baked feature will make it worse.
+AGREEABILITY: 55
+
+AGENT: Stakeholder
+APPEARANCE: suit, normal, male
+AGENDA: You represent business interests. There's pressure from leadership to show progress. A competitor just launched something similar. You need something to announce at the quarterly review in 6 weeks. Push for visible progress but listen to the team's concerns. Your hidden info: if this feature doesn't ship soon, the project might lose funding.
+AGREEABILITY: 50
+
+RULES:
+- Product Manager must accept (owns the roadmap)
+- Tech Lead must accept (has to build it)
+- At least one of Designer or Stakeholder must also accept
+- The chosen option determines what gets documented in the spec
+
+MAX_ROUNDS: 15
+
+TASK_TYPE: document
+TASK_OUTPUT: specification
+
+WORKING_DOCUMENTS:
+- specification: The feature specification document
+- notes: Discussion notes and decisions
+
+TASK_TEMPLATE:
+# Feature Specification
+
+## Overview
+{{feature_summary}}
+
+## Scope Decision
+{{scope_decision}}
+
+## Requirements
+
+### Must Have (P0)
+{{p0_requirements}}
+
+### Should Have (P1)
+{{p1_requirements}}
+
+### Nice to Have (P2)
+{{p2_requirements}}
+
+## Technical Considerations
+{{technical_notes}}
+
+## Timeline
+{{timeline}}
+
+## Open Questions
+{{open_questions}}
+
+---
+*Specification created via StateLoop Feature Planning*
+END_TEMPLATE

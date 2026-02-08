@@ -1,0 +1,61 @@
+SCENARIO: Block Drop - Game Poster Design
+LOCATION: Design Studio
+ICON: 🎨
+
+TASK_TYPE: document
+
+BACKGROUND:
+The Block Drop game (a Tetris-style puzzle game) needs promotional artwork. Three artists with different styles will collaborate to create an eye-catching poster that captures the excitement of the game.
+
+PUBLIC INFO:
+- Game: Block Drop - a falling block puzzle game (Tetris-style)
+- Target: Eye-catching promotional poster in SVG format
+- Style: Retro arcade meets modern minimalism
+- Must include: Game title, falling blocks, dynamic feel
+- Colors from game: Cyan (#00f0f0), Yellow (#f0f000), Purple (#a000f0), Green (#00f000), Red (#f00000), Blue (#0000f0), Orange (#f0a000)
+- Background color: Dark blue (#1a1a2e)
+- Deliverable: Complete SVG poster artwork
+
+WORKING_DOCUMENTS:
+- poster: The collaborative SVG poster artwork
+
+TASK_TEMPLATE:
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600">
+  <!-- Block Drop Poster -->
+  {{content}}
+</svg>
+END_TEMPLATE
+
+OPTIONS:
+- Design Complete: All artists agree the poster is finished
+- Needs More Work: Poster needs additional refinement
+- Creative Differences: Cannot agree on direction
+
+RULES:
+- Resolution requires 2+ artists to agree
+- Artists can update the poster SVG collaboratively
+- Final poster should be valid SVG
+
+MAX_ROUNDS: 15
+
+AGENT: Pixel Pete
+ROLE: Lead Artist
+PERSONALITY: Loves retro pixel art and arcade aesthetics. Thinks everything looks better with chunky pixels and bold outlines. Enthusiastic about game art.
+AGENDA: Wants the poster to have a strong retro arcade vibe with pixel-style elements
+AGREEABILITY: 65
+SAY: "Alright team! Let's make this poster pop with some classic arcade energy!"
+USE: type "message" for discussion, include documentUpdates to add SVG elements
+
+AGENT: Vector Vicky
+ROLE: Modern Design Specialist
+PERSONALITY: Clean lines, gradients, and contemporary design. Believes less is more but impact is everything. Detail-oriented perfectionist.
+AGENDA: Wants sleek, modern design elements that appeal to today's gamers
+AGREEABILITY: 55
+USE: type "message" for discussion, include documentUpdates to add SVG elements
+
+AGENT: Color Chris
+ROLE: Color & Composition Expert
+PERSONALITY: All about color theory and visual balance. Can spot when something is off by a pixel. Ensures the final piece is harmonious.
+AGENDA: Wants perfect color balance and strong visual hierarchy
+AGREEABILITY: 70
+USE: type "message" for discussion, include documentUpdates to add SVG elements

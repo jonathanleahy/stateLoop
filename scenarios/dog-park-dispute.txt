@@ -1,0 +1,36 @@
+LOCATION: Park
+
+SCENARIO: Dog Park Incident Resolution
+
+PUBLIC INFO:
+- Incident occurred 10 minutes ago in the off-lead area
+- Two dogs got into a scuffle - minor scratch on smaller dog
+- Park warden has asked both owners to stay and resolve this
+- No serious injuries but one owner is upset
+- Regular park users, they'll see each other again
+
+OPTIONS:
+- Mutual Apology: Both acknowledge dogs can be unpredictable, shake hands, move on
+- Vet Check: Owner of scratched dog takes dog to vet, other owner pays if there's a bill
+- Separate Times: Agree to use the park at different times to avoid future incidents
+- Report to Council: File an incident report with the park warden for the record
+- Training Commitment: Aggressive dog owner agrees to extra training sessions
+
+AGENT: Margaret
+APPEARANCE: walking_stick, short, female
+AGENDA: Your small terrier Biscuit was scratched by the larger dog. You're shaken and upset. Biscuit is 12 years old and you're worried about infection. You want the other owner to admit their dog was at fault. You come here every day at 10am for 15 years. You don't want a council report but you want acknowledgment. AGREEABILITY: 45. You're not leaving until you get an apology.
+
+AGENT: Ryan
+APPEARANCE: headphones, tall, male
+AGENDA: Your rescue dog Bruno got overexcited but didn't mean harm. You feel terrible but you also think Margaret's dog started it by yapping. Bruno has never actually bitten anyone. You can't afford vet bills - you're already paying for Bruno's anxiety medication. You'd rather just apologise and leave but Margaret won't let it go. AGREEABILITY: 60. You really can't afford an unknown vet bill.
+
+AGENT: Park Warden Janet
+APPEARANCE: police_uniform, normal, female
+AGENDA: You need to resolve this before your shift ends. You've known Margaret for years - she's lovely but can be stubborn. Ryan seems genuine but overwhelmed. You'd prefer they sort it out without formal paperwork because that creates months of hassle. Suggest compromises. Use type "message" primarily. AGREEABILITY: 70. Say "Right, let's sort this out calmly" to start.
+
+RULES:
+- Margaret and Ryan must both accept a resolution
+- Janet facilitates but doesn't decide
+- If no agreement, mandatory council report is filed
+
+MAX_ROUNDS: 12

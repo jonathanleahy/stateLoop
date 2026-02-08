@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Airplane Hangar</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
+canvas { border-radius: 12px; box-shadow: 0 0 40px rgba(99, 102, 241, 0.3); }
+</style>
+</head>
+<body>
+<canvas id="g"></canvas>
+<script>
+const C = document.getElementById('g'), X = C.getContext('2d');
+let W, H, HX, HY, HW, HH, CELL;
+function resize() {
+  const s = Math.min(window.innerWidth * 0.95, 440);
+  W = C.width = s; H = C.height = s * 1.5; HX = 20; HY = 70; HW = W - 40; HH = H - 110; CELL = HW / 22;
+}
+resize(); window.addEventListener('resize', resize);
+const TYPES = [
+  { name: 'Prop', col: '#4ade80', nose: 2, fuse: 0.4, wing: 2, sw: 0, tail: 1, pts: 10 },
+  { name: 'Regional', col: '#60a5fa', nose: 2.8, fuse: 0.5, wing: 3, sw: 0.5, tail: 1.3, pts: 20 },
+  { name: 'Commercial', col: '#fb923c', nose: 3.8, fuse: 0.7, wing: 4.2, sw: 0.8, tail: 1.6, pts: 35 },
+  { name: 'Jumbo', col: '#f87171', nose: 4.8, fuse: 0.9, wing: 5.2, sw: 1, tail: 2.1, pts: 50 },
+  { name: 'Fighter', col: '#c084fc', nose: 2.4, fuse: 0.35, wing: 3.8, sw: 2, tail: 0.9, pts: 25 },
+];
+function mkPoly(t, cx, cy, ang, sc) {
+  const s = sc || CELL, a = ang * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+  const r = (lx, ly) => [cx + (lx * co - ly * si) * s, cy + (lx * si + ly * co) * s];
+  return [r(0, t.nose), r(t.fuse * 0.6, t.nose * 0.5), r(t.wing, t.sw), r(t.wing * 0.85, -t.sw * 0.3),
+    r(t.fuse * 0.7, -t.sw * 0.2), r(t.tail, -t.nose + 0.3), r(t.fuse * 0.4, -t.nose * 0.8),
+    r(0, -t.nose * 1.05), r(-t.fuse * 0.4, -t.nose * 0.8), r(-t.tail, -t.nose + 0.3),
+    r(-t.fuse * 0.7, -t.sw * 0.2), r(-t.wing * 0.85, -t.sw * 0.3), r(-t.wing, t.sw), r(-t.fuse * 0.6, t.nose * 0.5)];
+}
+let parked = [], cur = null, score = 0, nP = 0, state = 'intro', thud = 0, thudT = 0, overMsg = '', keys = {}, sparks = [];
+function spawn() {
+  const wt = [3, 3, 2, 1, 2]; let r = Math.random() * 11, idx = 0;
+  for (let i = 0; i < 5; i++) { r -= wt[i]; if (r <= 0) { idx = i; break; } }
+  cur = { type: TYPES[idx], x: HX + HW / 2, y: HY + HH / 2, ang: 0 };
+}
+function bounds(pts) {
+  let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+  for (const [x, y] of pts) { x1 = Math.min(x1, x); y1 = Math.min(y1, y); x2 = Math.max(x2, x); y2 = Math.max(y2, y); }
+  return { x1, y1, x2, y2 };
+}
+function sat(a, b) {
+  const axes = [];
+  for (const p of [a, b]) for (let i = 0; i < p.length; i++) {
+    const j = (i + 1) % p.length, dx = p[j][0] - p[i][0], dy = p[j][1] - p[i][1], l = Math.hypot(dx, dy) || 1;
+    axes.push([-dy / l, dx / l]);
+  }
+  for (const ax of axes) {
+    let a1 = 1e9, a2 = -1e9, b1 = 1e9, b2 = -1e9;
+    for (const [x, y] of a) { const d = x * ax[0] + y * ax[1]; a1 = Math.min(a1, d); a2 = Math.max(a2, d); }
+    for (const [x, y] of b) { const d = x * ax[0] + y * ax[1]; b1 = Math.min(b1, d); b2 = Math.max(b2, d); }
+    if (a2 <= b1 || b2 <= a1) return false;
+  }
+  return true;
+}
+function canPlace(poly) {
+  const b = bounds(poly);
+  if (b.x1 < HX + 1 || b.x2 > HX + HW - 1 || b.y1 < HY + 1 || b.y2 > HY + HH - 1) return false;
+  for (const p of parked) if (sat(poly, p.poly)) return false;
+  return true;
+}
+function fillPct() {
+  let a = 0;
+  for (const p of parked) { const b = bounds(p.poly); a += (b.x2 - b.x1) * (b.y2 - b.y1) * 0.55; }
+  return Math.min(99, Math.round(a / (HW * HH) * 100));
+}
+function drop() {
+  if (!cur || state !== 'play') return;
+  const poly = mkPoly(cur.type, cur.x, cur.y, cur.ang);
+  if (!canPlace(poly)) return;
+  parked.push({ type: cur.type, x: cur.x, y: cur.y, ang: cur.ang, poly });
+  score += cur.type.pts; const fill = fillPct();
+  if (fill > 25) score += Math.floor(fill * 0.5);
+  nP++; thud = 10; thudT = performance.now();
+  for (let i = 0; i < 12; i++) sparks.push({ x: cur.x, y: cur.y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4, life: 30, col: cur.type.col });
+  cur = null;
+  setTimeout(() => { if (state === 'play') { spawn(); checkOver(); } }, 350);
+}
+function checkOver() {
+  if (!cur) return;
+  for (let a = 0; a < 360; a += 90)
+    for (let tx = HX + 25; tx < HX + HW - 25; tx += CELL * 1.5)
+      for (let ty = HY + 25; ty < HY + HH - 25; ty += CELL * 1.5)
+        if (canPlace(mkPoly(cur.type, tx, ty, a))) return;
+  state = 'over'; overMsg = `No room for the ${cur.type.name}!`;
+}
+function darken(h, f) {
+  return `rgb(${Math.floor(parseInt(h.slice(1,3),16)*f)},${Math.floor(parseInt(h.slice(3,5),16)*f)},${Math.floor(parseInt(h.slice(5,7),16)*f)})`;
+}
+function drawPlane(t, cx, cy, ang, sc, alpha, glow, dark) {
+  const pts = mkPoly(t, cx, cy, ang, sc); X.save(); X.globalAlpha = alpha;
+  if (glow) { X.shadowColor = glow; X.shadowBlur = 16; }
+  X.beginPath(); X.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) X.lineTo(pts[i][0], pts[i][1]);
+  X.closePath(); X.fillStyle = dark ? darken(t.col, 0.7) : t.col; X.fill();
+  X.shadowBlur = 0; X.strokeStyle = 'rgba(255,255,255,0.35)'; X.lineWidth = 1.2; X.stroke();
+  const s = sc || CELL, a = ang * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+  const r = (lx, ly) => [cx + (lx * co - ly * si) * s, cy + (lx * si + ly * co) * s];
+  const [nx, ny] = r(0, t.nose * 0.85), [bx, by] = r(0, -t.nose * 0.85);
+  X.globalAlpha = alpha * 0.3; X.beginPath(); X.moveTo(nx, ny); X.lineTo(bx, by);
+  X.strokeStyle = '#fff'; X.lineWidth = 1.8; X.stroke();
+  const [dx, dy] = r(0, t.nose * 0.6);
+  X.globalAlpha = alpha * 0.5; X.beginPath(); X.arc(dx, dy, Math.max(2, s * 0.15), 0, Math.PI * 2);
+  X.fillStyle = '#fff'; X.fill(); X.restore();
+}
+function drawHangar() {
+  X.fillStyle = '#16162a'; X.fillRect(HX, HY, HW, HH);
+  X.strokeStyle = 'rgba(255,255,255,0.04)'; X.lineWidth = 1;
+  for (let gx = HX; gx <= HX + HW; gx += CELL) { X.beginPath(); X.moveTo(gx, HY); X.lineTo(gx, HY + HH); X.stroke(); }
+  for (let gy = HY; gy <= HY + HH; gy += CELL) { X.beginPath(); X.moveTo(HX, gy); X.lineTo(HX + HW, gy); X.stroke(); }
+  X.fillStyle = '#fbbf24'; X.fillRect(HX + HW * 0.3, HY - 4, HW * 0.4, 8);
+  X.fillStyle = '#16162a'; X.fillRect(HX + HW * 0.3 + 2, HY - 1, HW * 0.4 - 4, 2);
+  X.strokeStyle = '#4a4a6a'; X.lineWidth = 3; X.strokeRect(HX, HY, HW, HH);
+  const sw = HW * 0.4, sx = HX + HW * 0.3;
+  for (let i = 0; i < sw; i += 8) { X.fillStyle = i % 16 < 8 ? 'rgba(251,191,36,0.15)' : 'rgba(0,0,0,0)'; X.fillRect(sx + i, HY, Math.min(8, sw - i), 3); }
+}
+function draw() {
+  X.clearRect(0, 0, W, H); X.fillStyle = '#0f0c29'; X.fillRect(0, 0, W, H);
+  if (state === 'intro') return drawIntro();
+  if (state === 'over') { drawGame(); drawOverlay(); return; }
+  drawGame();
+}
+function drawGame() {
+  X.fillStyle = '#e2e8f0'; X.font = 'bold 15px Segoe UI'; X.textAlign = 'left';
+  X.fillText(`Score: ${score}`, 20, 28);
+  X.textAlign = 'center'; X.fillText(`Planes: ${nP}`, W / 2, 28);
+  X.textAlign = 'right'; X.fillText(`Fill: ${fillPct()}%`, W - 20, 28);
+  if (cur) {
+    X.textAlign = 'left'; X.fillStyle = cur.type.col; X.font = '13px Segoe UI';
+    X.fillText(`Current: ${cur.type.name} (${cur.type.pts}pts)`, 20, 50);
+    X.textAlign = 'right'; X.fillStyle = '#64748b'; X.font = '11px Segoe UI';
+    X.fillText('\u2190\u2192 move  \u2191\u2193 rotate  Space drop', W - 20, 50);
+  }
+  const dt = performance.now() - thudT;
+  const sh = thud > 0 && dt < 200 ? Math.sin(dt * 0.05) * thud * Math.exp(-dt * 0.01) : 0;
+  if (dt > 200) thud = 0;
+  X.save(); X.translate(0, sh);
+  drawHangar();
+  for (const p of parked) drawPlane(p.type, p.x, p.y, p.ang, undefined, 0.8, null, true);
+  sparks = sparks.filter(s => s.life > 0);
+  for (const s of sparks) { s.x += s.vx; s.y += s.vy; s.life--; X.globalAlpha = s.life / 30; X.fillStyle = s.col; X.fillRect(s.x - 2, s.y - 2, 4, 4); }
+  X.globalAlpha = 1;
+  if (cur) {
+    const poly = mkPoly(cur.type, cur.x, cur.y, cur.ang), ok = canPlace(poly);
+    X.save(); X.globalAlpha = ok ? 0.25 : 0.12; X.setLineDash([4, 4]);
+    X.beginPath(); X.moveTo(poly[0][0], poly[0][1]);
+    for (let i = 1; i < poly.length; i++) X.lineTo(poly[i][0], poly[i][1]);
+    X.closePath(); X.strokeStyle = ok ? cur.type.col : '#ff4444'; X.lineWidth = 2; X.stroke();
+    X.fillStyle = ok ? cur.type.col : '#ff4444'; X.fill(); X.restore();
+    drawPlane(cur.type, cur.x, cur.y, cur.ang, undefined, 1, ok ? '#fff' : '#ff4444');
+    if (!ok) { X.save(); X.globalAlpha = 0.6 + Math.sin(performance.now() * 0.01) * 0.3; X.fillStyle = '#ff4444'; X.font = 'bold 13px Segoe UI'; X.textAlign = 'center'; X.fillText('Cannot place here', cur.x, cur.y - cur.type.nose * CELL - 10); X.restore(); }
+  }
+  X.restore();
+  const bh = 50, by = H - bh - 5, bw = W / 4 - 8, btns = ['\u25C0', '\u25B6', '\u21BB', '\u2B07'];
+  for (let i = 0; i < 4; i++) {
+    const bx = 6 + i * (bw + 6); X.fillStyle = 'rgba(255,255,255,0.06)'; X.strokeStyle = 'rgba(255,255,255,0.1)'; X.lineWidth = 1;
+    X.beginPath(); X.roundRect(bx, by, bw, bh, 8); X.fill(); X.stroke();
+    X.fillStyle = 'rgba(255,255,255,0.3)'; X.font = '18px Segoe UI'; X.textAlign = 'center'; X.fillText(btns[i], bx + bw / 2, by + bh / 2 + 6);
+  }
+}
+function drawIntro() {
+  X.fillStyle = '#e2e8f0'; X.font = 'bold 28px Segoe UI'; X.textAlign = 'center';
+  X.fillText('Airplane Hangar', W / 2, 55);
+  X.fillStyle = '#94a3b8'; X.font = '14px Segoe UI';
+  X.fillText('Pack planes tightly into the hangar!', W / 2, 82);
+  const gap = (H - 230) / 5;
+  TYPES.forEach((t, i) => {
+    const cy = 130 + i * gap + gap / 2;
+    X.fillStyle = 'rgba(255,255,255,0.03)'; X.beginPath(); X.roundRect(30, cy - gap / 2 + 4, W - 60, gap - 8, 8); X.fill();
+    drawPlane(t, 80, cy, 0, CELL * 0.7, 1);
+    X.fillStyle = t.col; X.font = 'bold 16px Segoe UI'; X.textAlign = 'left'; X.fillText(t.name, 140, cy - 4);
+    X.fillStyle = '#94a3b8'; X.font = '12px Segoe UI'; X.fillText(`${t.pts} points`, 140, cy + 14);
+  });
+  X.fillStyle = '#fbbf24'; X.font = 'bold 18px Segoe UI'; X.textAlign = 'center';
+  X.globalAlpha = 0.7 + Math.sin(performance.now() * 0.003) * 0.3;
+  X.fillText('Click or SPACE to start', W / 2, H - 50); X.globalAlpha = 1;
+  X.fillStyle = '#64748b'; X.font = '12px Segoe UI';
+  X.fillText('\u2190\u2192 / AD: move | \u2191\u2193 / WS: rotate | Space: drop', W / 2, H - 25);
+}
+function drawOverlay() {
+  X.fillStyle = 'rgba(0,0,0,0.75)'; X.fillRect(0, 0, W, H);
+  X.fillStyle = '#f87171'; X.font = 'bold 32px Segoe UI'; X.textAlign = 'center';
+  X.fillText('Hangar Full!', W / 2, H / 2 - 70);
+  X.fillStyle = '#94a3b8'; X.font = '14px Segoe UI'; X.fillText(overMsg, W / 2, H / 2 - 40);
+  X.fillStyle = '#e2e8f0'; X.font = 'bold 24px Segoe UI'; X.fillText(`Score: ${score}`, W / 2, H / 2);
+  X.font = '16px Segoe UI'; X.fillStyle = '#94a3b8';
+  X.fillText(`Planes parked: ${nP}`, W / 2, H / 2 + 35);
+  X.fillText(`Hangar fill: ${fillPct()}%`, W / 2, H / 2 + 60);
+  X.fillStyle = '#fbbf24'; X.font = 'bold 16px Segoe UI';
+  X.fillText('Click or SPACE to play again', W / 2, H / 2 + 110);
+}
+function start() { parked = []; score = 0; nP = 0; thud = 0; sparks = []; state = 'play'; spawn(); checkOver(); }
+function update() {
+  if (state !== 'play' || !cur) return;
+  const spd = CELL * 0.35;
+  if (keys['ArrowLeft'] || keys['KeyA']) cur.x -= spd;
+  if (keys['ArrowRight'] || keys['KeyD']) cur.x += spd;
+  cur.x = Math.max(HX + 5, Math.min(HX + HW - 5, cur.x));
+  cur.y = Math.max(HY + 5, Math.min(HY + HH - 5, cur.y));
+}
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+loop();
+document.addEventListener('keydown', e => {
+  if (e.repeat && 'ArrowUp ArrowDown KeyW KeyS'.includes(e.code)) return;
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); state === 'play' ? drop() : start(); }
+  if (state === 'play' && cur) {
+    if ('ArrowUp KeyW KeyQ KeyR'.includes(e.code)) cur.ang = (cur.ang + 90) % 360;
+    if ('ArrowDown KeyS'.includes(e.code)) cur.ang = (cur.ang + 270) % 360;
+  }
+});
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+function touchPos(e) { const t = e.touches[0], r = C.getBoundingClientRect(); return [(t.clientX - r.left) / r.width * W, (t.clientY - r.top) / r.height * H]; }
+function clickPos(e) { const r = C.getBoundingClientRect(); return [(e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H]; }
+function handleInput(cx, cy) {
+  if (cy > H - 60) {
+    const z = Math.floor(cx / (W / 4));
+    if (z === 0 && cur) cur.x -= CELL * 2; else if (z === 1 && cur) cur.x += CELL * 2;
+    else if (z === 2 && cur) cur.ang = (cur.ang + 90) % 360; else if (z === 3) drop();
+  } else if (cur && cy >= HY && cy <= HY + HH) { cur.x = cx; cur.y = cy; }
+}
+C.addEventListener('click', e => { if (state !== 'play') { start(); return; } const [cx, cy] = clickPos(e); handleInput(cx, cy); });
+C.addEventListener('touchstart', e => { e.preventDefault(); if (state !== 'play') { start(); return; } handleInput(...touchPos(e)); }, { passive: false });
+C.addEventListener('touchmove', e => { e.preventDefault(); if (state !== 'play' || !cur) return; const [cx, cy] = touchPos(e); if (cy < H - 60) { cur.x = cx; cur.y = cy; } }, { passive: false });
+C.addEventListener('dblclick', e => { e.preventDefault(); if (cur) cur.ang = (cur.ang + 90) % 360; });
+</script>
+</body>
+</html>

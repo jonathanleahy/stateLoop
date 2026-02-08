@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RIPPLE</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a0f;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: hidden;
+    }
+    #game { cursor: pointer; }
+    #ui {
+      position: absolute;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      text-align: center;
+      pointer-events: none;
+    }
+    #score { font-size: 48px; font-weight: 200; letter-spacing: 4px; }
+    #combo { font-size: 18px; opacity: 0.6; margin-top: 5px; }
+    #lives { position: absolute; top: 30px; right: 30px; font-size: 24px; }
+    #message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 32px;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #message.show { opacity: 1; }
+    #start {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      text-align: center;
+    }
+    #start h1 { font-size: 64px; font-weight: 200; letter-spacing: 8px; margin-bottom: 20px; }
+    #start p { font-size: 18px; opacity: 0.6; }
+    #start { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui">
+    <div id="score">0</div>
+    <div id="combo"></div>
+  </div>
+  <div id="lives"></div>
+  <div id="message"></div>
+  <div id="start">
+    <h1>RIPPLE</h1>
+    <p>hold to charge • release to blast<br>kill 3+ = slow-mo • close kills = powerups<br>survive the waves • defeat the bosses</p>
+    <p style="margin-top: 40px; opacity: 0.4;">click to start</p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // Audio
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playTone(freq, duration, type = 'sine', volume = 0.3) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function playPulseSound() {
+      playTone(200, 0.1, 'sine', 0.15);
+    }
+
+    function playHitSound(combo) {
+      // Higher pitch for higher combos
+      const baseFreq = 400 + (combo * 50);
+      playTone(baseFreq, 0.15, 'sine', 0.25);
+      setTimeout(() => playTone(baseFreq * 1.5, 0.1, 'sine', 0.15), 50);
+    }
+
+    function playMissSound() {
+      playTone(150, 0.3, 'sawtooth', 0.2);
+      setTimeout(() => playTone(100, 0.2, 'sawtooth', 0.15), 100);
+    }
+
+    // Beat-driven music - enemies spawn ON the beat
+    let musicPlaying = false;
+    let beat = 0;
+    let bpm = 130;
+    let beatInterval;
+    let beatPulse = 0; // Visual pulse on beat
+
+    function getBeatMs() { return 60000 / bpm; }
+
+    function onBeat() {
+      if (!musicPlaying) return;
+      const beatInBar = beat % 16;
+      const bar = Math.floor(beat / 16);
+
+      beatPulse = 1; // Visual feedback
+
+      // === BASS (every 2 beats) ===
+      if (beatInBar % 2 === 0) {
+        const bassNotes = [55, 55, 65.41, 65.41, 73.42, 73.42, 65.41, 65.41];
+        const note = bassNotes[Math.floor(beatInBar / 2) % bassNotes.length];
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = note;
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      }
+
+      // === KICK (beats 0, 4, 8, 12) ===
+      if (beatInBar % 4 === 0) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.25);
+      }
+
+      // === HI-HAT ===
+      const hatPattern = [1,0,1,0, 1,0,1,1, 1,0,1,0, 1,0,1,1];
+      if (hatPattern[beatInBar]) {
+        const bufferSize = audioCtx.sampleRate * 0.04;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 10);
+        }
+        const source = audioCtx.createBufferSource();
+        const gain = audioCtx.createGain();
+        source.buffer = buffer;
+        gain.gain.value = 0.06;
+        source.connect(gain);
+        gain.connect(audioCtx.destination);
+        source.start();
+      }
+
+      // === ARP (skips some beats) ===
+      const arpNotes = [440, 523.25, 659.25, 523.25, 440, 349.23, 392, 349.23,
+                        440, 587.33, 659.25, 587.33, 493.88, 440, 392, 349.23];
+      if (beatInBar % 3 !== 1) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = arpNotes[beatInBar];
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      }
+
+      // === PAD (every 8 beats) ===
+      if (beatInBar % 8 === 0) {
+        const chords = [
+          [220, 261.63, 329.63],  // Am
+          [261.63, 329.63, 392],  // C
+          [293.66, 349.23, 440],  // Dm
+          [261.63, 329.63, 392],  // C
+        ];
+        const chord = chords[Math.floor(beatInBar / 8 + bar) % chords.length];
+        chord.forEach(freq => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.03, audioCtx.currentTime + 1.2);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.5);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 1.5);
+        });
+      }
+
+      // === SPAWN ENEMIES ON THE BEAT ===
+      if (gameStarted && !betweenWaves) {
+        // Spawn patterns per wave
+        const spawnEvery = Math.max(2, 6 - wave); // Wave 1: every 6 beats, wave 5+: every 2 beats
+        if (beatInBar % spawnEvery === 0 && targets.length < 10 + wave * 2) {
+          spawnTarget();
+        }
+        // Extra spawn on downbeat in later waves
+        if (wave >= 3 && beatInBar === 0 && targets.length < 10 + wave * 2) {
+          spawnTarget();
+        }
+      }
+
+      beat++;
+    }
+
+    function startMusic() {
+      if (musicPlaying) return;
+      musicPlaying = true;
+      beat = 0;
+      beatInterval = setInterval(onBeat, getBeatMs());
+    }
+
+    function stopMusic() {
+      musicPlaying = false;
+      clearInterval(beatInterval);
+    }
+
+    // Fullscreen canvas
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resize();
+    window.addEventListener('resize', resize);
+
+    // Game state
+    let gameStarted = false;
+    let score = 0;
+    let combo = 0;
+    let lives = 3;
+    let centerX, centerY;
+
+    // Ripples (player pulses)
+    const ripples = [];
+
+    // Targets (things to hit)
+    const targets = [];
+
+    // Particles (visual feedback)
+    const particles = [];
+
+    // Screen effects
+    let screenShake = 0;
+    let screenFlash = 0;
+
+    // Charge mechanic
+    let isCharging = false;
+    let chargeStart = 0;
+    let maxCharge = 2000; // ms to full charge
+
+    // Initialize center
+    function initGame() {
+      centerX = canvas.width / 2;
+      centerY = canvas.height / 2;
+
+      // Start with 2 targets
+      for (let i = 0; i < 2; i++) {
+        spawnTarget();
+      }
+
+      updateUI();
+    }
+
+    // Difficulty scaling
+    let spawnTimer = 0;
+    let spawnInterval = 120; // frames between spawns
+    let wave = 1;
+    let waveTimer = 0;
+    let waveLength = 600; // 10 seconds per wave at 60fps
+    let betweenWaves = false;
+    let betweenWaveTimer = 0;
+
+    // Slow motion
+    let slowMo = 1;
+    let slowMoTimer = 0;
+
+    // Powerups
+    const powerups = [];
+
+    // Boss
+    let bossActive = false;
+
+    // Spawn an enemy at the edge - different types
+    function spawnTarget(type = null, angle = null, dist = null) {
+      const spawnAngle = angle !== null ? angle : Math.random() * Math.PI * 2;
+      const startDist = dist !== null ? dist : Math.min(canvas.width, canvas.height) * 0.5;
+      const difficulty = Math.min(wave / 5, 2);
+
+      // Pick type based on wave
+      if (!type) {
+        const roll = Math.random();
+        if (wave >= 3 && roll < 0.15) type = 'splitter';
+        else if (wave >= 2 && roll < 0.3) type = 'fast';
+        else if (wave >= 2 && roll < 0.4) type = 'tank';
+        else type = 'normal';
+      }
+
+      const types = {
+        normal: { speed: 0.8 + difficulty * 0.4, radius: 18, hp: 1, color: `hsl(${Math.random() * 30}, 70%, 55%)`, points: 10 },
+        fast: { speed: 1.8 + difficulty * 0.5, radius: 12, hp: 1, color: `hsl(60, 80%, 55%)`, points: 15 },
+        tank: { speed: 0.5 + difficulty * 0.2, radius: 28, hp: 2, color: `hsl(280, 60%, 45%)`, points: 25 },
+        splitter: { speed: 0.7 + difficulty * 0.3, radius: 22, hp: 1, color: `hsl(120, 70%, 45%)`, points: 20, splits: true },
+        boss: { speed: 0.3, radius: 50, hp: 10, color: `hsl(0, 90%, 40%)`, points: 200 }
+      };
+
+      const t = types[type];
+      targets.push({
+        type: type,
+        angle: spawnAngle,
+        distance: startDist,
+        speed: t.speed + Math.random() * 0.3,
+        radius: t.radius,
+        hp: t.hp,
+        maxHp: t.hp,
+        pulsePhase: Math.random() * Math.PI * 2,
+        color: t.color,
+        points: t.points,
+        splits: t.splits || false
+      });
+    }
+
+    // Spawn boss
+    function spawnBoss() {
+      if (bossActive) return;
+      bossActive = true;
+      spawnTarget('boss');
+    }
+
+    // Create ripple with power (0-1)
+    function createRipple(power) {
+      const kills = Math.floor(1 + power * 5); // 1-6 kills based on charge
+      const thickness = 3 + power * 8; // Thicker ring
+
+      playPulseSound();
+      ripples.push({
+        x: centerX,
+        y: centerY,
+        radius: 20,
+        maxRadius: Math.max(canvas.width, canvas.height),
+        speed: 8 + power * 4, // Faster when charged
+        opacity: 1,
+        color: power > 0.5 ? `hsl(${60 - power * 40}, 90%, 60%)` : `hsl(${180 + Math.random() * 40}, 80%, 60%)`,
+        killsLeft: kills,
+        thickness: thickness
+      });
+
+      // Pulse effect at center
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        particles.push({
+          x: centerX,
+          y: centerY,
+          vx: Math.cos(angle) * 3,
+          vy: Math.sin(angle) * 3,
+          radius: 4,
+          opacity: 1,
+          color: '#4ecdc4'
+        });
+      }
+    }
+
+    // Spawn powerup
+    function spawnPowerup(x, y) {
+      const types = ['shield', 'nuke', 'slow'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const colors = { shield: '#4ecdc4', nuke: '#ff6b6b', slow: '#ffe66d' };
+      powerups.push({
+        x, y,
+        type,
+        color: colors[type],
+        life: 300, // 5 seconds
+        radius: 12
+      });
+    }
+
+    // Collect powerup
+    function collectPowerup(p) {
+      if (p.type === 'shield') {
+        lives = Math.min(lives + 1, 5);
+      } else if (p.type === 'nuke') {
+        // Kill all enemies
+        targets.forEach(t => {
+          hitEffect(centerX + Math.cos(t.angle) * t.distance,
+                    centerY + Math.sin(t.angle) * t.distance, t.color);
+          score += t.points;
+        });
+        targets.length = 0;
+        bossActive = false;
+        screenFlash = 1;
+      } else if (p.type === 'slow') {
+        slowMo = 0.3;
+        slowMoTimer = 180;
+      }
+      updateUI();
+    }
+
+    // Hit effect
+    function hitEffect(x, y, color) {
+      screenFlash = 0.3;
+      combo++;
+
+      // Burst particles
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.5;
+        const speed = 2 + Math.random() * 4;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 3 + Math.random() * 4,
+          opacity: 1,
+          color: color
+        });
+      }
+    }
+
+    // Miss effect
+    function missEffect() {
+      screenShake = 10;
+      combo = 0;
+      lives--;
+
+      if (lives <= 0) {
+        gameOver();
+      }
+
+      updateUI();
+    }
+
+    // Game over
+    function gameOver() {
+      gameStarted = false;
+      stopMusic();
+      document.getElementById('message').textContent = `GAME OVER`;
+      document.getElementById('message').classList.add('show');
+
+      setTimeout(() => {
+        document.getElementById('message').classList.remove('show');
+        document.getElementById('start').style.display = 'block';
+        document.getElementById('start').querySelector('h1').textContent = 'RIPPLE';
+        document.getElementById('start').querySelector('p').innerHTML =
+          `Score: ${score} • Wave ${wave}<br><br>click to play again`;
+      }, 2000);
+    }
+
+    // Update UI
+    function updateUI() {
+      document.getElementById('score').textContent = score;
+      document.getElementById('combo').textContent = combo > 1 ? `${combo}x combo` : '';
+      document.getElementById('lives').textContent = '♥'.repeat(lives);
+    }
+
+    // Update game state
+    function update() {
+      if (!gameStarted) return;
+
+      // Update ripples
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const r = ripples[i];
+        r.radius += r.speed;
+        r.opacity = 1 - (r.radius / r.maxRadius);
+
+        // Check target collisions (ripple can hit multiple based on killsLeft)
+        let killsThisRipple = 0;
+        if (r.killsLeft > 0) {
+          for (let j = targets.length - 1; j >= 0; j--) {
+            const t = targets[j];
+            const tx = centerX + Math.cos(t.angle) * t.distance;
+            const ty = centerY + Math.sin(t.angle) * t.distance;
+
+            const dist = Math.sqrt((tx - centerX) ** 2 + (ty - centerY) ** 2);
+
+            // Check if ripple passes through target
+            if (Math.abs(r.radius - dist) < t.radius + 10) {
+              // HIT!
+              t.hp--;
+
+              if (t.hp <= 0) {
+                // Killed!
+                r.killsLeft--;
+                killsThisRipple++;
+                score += t.points * (combo + 1);
+                playHitSound(combo);
+                hitEffect(tx, ty, t.color);
+
+                // Close kill = powerup chance
+                if (t.distance < 100 && Math.random() < 0.4) {
+                  spawnPowerup(tx, ty);
+                }
+
+                // Splitter spawns 2 small fast enemies
+                if (t.splits) {
+                  spawnTarget('fast', t.angle - 0.3, t.distance);
+                  spawnTarget('fast', t.angle + 0.3, t.distance);
+                }
+
+                // Boss defeated
+                if (t.type === 'boss') {
+                  bossActive = false;
+                  screenFlash = 1;
+                }
+
+                targets.splice(j, 1);
+              } else {
+                // Damaged but not dead
+                playTone(300, 0.1, 'square', 0.2);
+                screenFlash = 0.1;
+              }
+
+              updateUI();
+
+              if (r.killsLeft <= 0) break;
+            }
+          }
+        }
+
+        // Chain bonus: 3+ kills = slow mo
+        if (killsThisRipple >= 3) {
+          slowMo = 0.3;
+          slowMoTimer = 90; // 1.5 seconds
+          screenFlash = 0.5;
+        }
+
+        // Remove faded ripples
+        if (r.opacity <= 0) {
+          ripples.splice(i, 1);
+        }
+      }
+
+      // Slow mo decay
+      if (slowMoTimer > 0) {
+        slowMoTimer--;
+        if (slowMoTimer <= 0) slowMo = 1;
+      }
+
+      // Wave system
+      if (!betweenWaves) {
+        waveTimer++;
+        if (waveTimer >= waveLength) {
+          // Wave complete!
+          betweenWaves = true;
+          betweenWaveTimer = 180; // 3 second break
+          score += wave * 50; // Wave bonus
+          updateUI();
+        }
+      } else {
+        betweenWaveTimer--;
+        if (betweenWaveTimer <= 0) {
+          // Next wave
+          wave++;
+          waveTimer = 0;
+          betweenWaves = false;
+
+          // Boss every 3 waves
+          if (wave % 3 === 0) {
+            spawnBoss();
+          }
+        }
+      }
+
+      // Decay beat pulse
+      beatPulse *= 0.9;
+
+      // Update enemies (move toward center)
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        t.pulsePhase += 0.1;
+        t.distance -= t.speed * slowMo; // Affected by slow-mo
+
+        // Enemy reached center - DAMAGE!
+        if (t.distance <= (t.type === 'boss' ? 50 : 30)) {
+          if (t.type === 'boss') bossActive = false;
+          targets.splice(i, 1);
+          playMissSound();
+          missEffect();
+        }
+      }
+
+      // Update powerups
+      for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        p.life--;
+
+        // Check if player ripple touches powerup
+        ripples.forEach(r => {
+          const dist = Math.sqrt((p.x - centerX) ** 2 + (p.y - centerY) ** 2);
+          if (Math.abs(r.radius - dist) < p.radius + 5) {
+            collectPowerup(p);
+            powerups.splice(i, 1);
+          }
+        });
+
+        if (p.life <= 0) {
+          powerups.splice(i, 1);
+        }
+      }
+
+      // Update particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.96;
+        p.vy *= 0.96;
+        p.opacity -= 0.02;
+        p.radius *= 0.98;
+
+        if (p.opacity <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+
+      // Decay screen effects
+      screenShake *= 0.9;
+      screenFlash *= 0.9;
+    }
+
+    // Draw everything
+    function draw() {
+      // Clear with slight trail effect
+      ctx.fillStyle = 'rgba(10, 10, 15, 0.3)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Apply screen shake
+      ctx.save();
+      if (screenShake > 0.5) {
+        ctx.translate(
+          (Math.random() - 0.5) * screenShake,
+          (Math.random() - 0.5) * screenShake
+        );
+      }
+
+      // Screen flash
+      if (screenFlash > 0.05) {
+        ctx.fillStyle = `rgba(78, 205, 196, ${screenFlash})`;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Draw center point
+      const charge = isCharging ? Math.min(1, (Date.now() - chargeStart) / maxCharge) : 0;
+      const centerSize = 8 + charge * 20 + beatPulse * 4;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, centerSize, 0, Math.PI * 2);
+      ctx.fillStyle = charge > 0.5 ? `hsl(${60 - charge * 40}, 90%, 60%)` : '#4ecdc4';
+      ctx.fill();
+
+      // Charge ring
+      if (isCharging) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, centerSize + 10, -Math.PI/2, -Math.PI/2 + charge * Math.PI * 2);
+        ctx.strokeStyle = charge > 0.8 ? '#ff6b6b' : '#4ecdc4';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+
+        // Kill count indicator
+        const kills = Math.floor(1 + charge * 5);
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`×${kills}`, centerX, centerY + centerSize + 30);
+      }
+
+      // Draw subtle guide circles - pulse with beat
+      const beatGlow = beatPulse * 0.15;
+      ctx.strokeStyle = `rgba(78, 205, 196, ${0.08 + beatGlow})`;
+      ctx.lineWidth = 1 + beatPulse * 2;
+      for (let r = 100; r < Math.max(canvas.width, canvas.height); r += 100) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // Draw ripples
+      ripples.forEach(r => {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = r.color.replace(')', `, ${r.opacity})`).replace('hsl', 'hsla');
+        ctx.lineWidth = r.thickness || 3;
+        ctx.stroke();
+      });
+
+      // Draw enemies
+      targets.forEach(t => {
+        const x = centerX + Math.cos(t.angle) * t.distance;
+        const y = centerY + Math.sin(t.angle) * t.distance;
+        const pulse = 1 + Math.sin(t.pulsePhase) * 0.2;
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(x, y, t.radius * pulse * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.3)';
+        ctx.fill();
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(x, y, t.radius * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = t.color;
+        ctx.fill();
+
+        // HP bar for multi-hit enemies
+        if (t.maxHp > 1) {
+          const barWidth = t.radius * 2;
+          const barHeight = 4;
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillRect(x - barWidth/2, y - t.radius - 10, barWidth, barHeight);
+          ctx.fillStyle = t.type === 'boss' ? '#ff0000' : '#ff6b6b';
+          ctx.fillRect(x - barWidth/2, y - t.radius - 10, barWidth * (t.hp / t.maxHp), barHeight);
+        }
+
+        // Type indicator
+        if (t.type === 'fast') {
+          ctx.fillStyle = 'white';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('»', x, y + 4);
+        } else if (t.type === 'splitter') {
+          ctx.fillStyle = 'white';
+          ctx.font = '12px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('÷', x, y + 4);
+        } else if (t.type === 'boss') {
+          ctx.fillStyle = 'white';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('☠', x, y + 7);
+        }
+      });
+
+      // Draw powerups
+      powerups.forEach(p => {
+        const flash = Math.sin(Date.now() / 100) * 0.3 + 0.7;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * flash, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Icon
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        const icons = { shield: '♥', nuke: '✸', slow: '◷' };
+        ctx.fillText(icons[p.type], p.x, p.y + 4);
+      });
+
+      // Wave indicator
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '14px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`Wave ${wave}`, 20, 30);
+
+      // Wave progress bar
+      if (!betweenWaves) {
+        const progress = waveTimer / waveLength;
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(20, 40, 100, 6);
+        ctx.fillStyle = '#4ecdc4';
+        ctx.fillRect(20, 40, 100 * progress, 6);
+      } else {
+        ctx.fillStyle = '#ffe66d';
+        ctx.fillText('Wave Clear! +' + ((wave-1) * 50), 20, 55);
+      }
+
+      // Slow-mo indicator
+      if (slowMo < 1) {
+        ctx.fillStyle = 'rgba(255, 230, 109, 0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      // Draw particles
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color.replace(')', `, ${p.opacity})`).replace('#', 'rgba(').replace(/([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i, (m, r, g, b) =>
+          `${parseInt(r, 16)}, ${parseInt(g, 16)}, ${parseInt(b, 16)}`);
+        ctx.fillStyle = `rgba(78, 205, 196, ${p.opacity})`;
+        ctx.fill();
+      });
+
+      ctx.restore();
+    }
+
+    // Game loop
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    // Input - mouse
+    canvas.addEventListener('mousedown', (e) => {
+      if (!gameStarted) {
+        startGame();
+      } else {
+        isCharging = true;
+        chargeStart = Date.now();
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (gameStarted && isCharging) {
+        const charge = Math.min(1, (Date.now() - chargeStart) / maxCharge);
+        createRipple(charge);
+        isCharging = false;
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      if (isCharging) {
+        const charge = Math.min(1, (Date.now() - chargeStart) / maxCharge);
+        createRipple(charge);
+        isCharging = false;
+      }
+    });
+
+    // Keyboard support
+    document.addEventListener('keydown', (e) => {
+      if (e.repeat) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (!gameStarted) {
+          startGame();
+        } else if (!isCharging) {
+          isCharging = true;
+          chargeStart = Date.now();
+        }
+      }
+    });
+
+    document.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && gameStarted && isCharging) {
+        const charge = Math.min(1, (Date.now() - chargeStart) / maxCharge);
+        createRipple(charge);
+        isCharging = false;
+      }
+    });
+
+    // Start screen click
+    document.getElementById('start').addEventListener('click', startGame);
+
+    function startGame() {
+      if (gameStarted) return;
+      audioCtx.resume();  // Required by browsers
+      startMusic();
+      gameStarted = true;
+      score = 0;
+      combo = 0;
+      lives = 3;
+      wave = 1;
+      waveTimer = 0;
+      spawnTimer = 0;
+      betweenWaves = false;
+      slowMo = 1;
+      slowMoTimer = 0;
+      bossActive = false;
+      ripples.length = 0;
+      targets.length = 0;
+      particles.length = 0;
+      powerups.length = 0;
+      document.getElementById('start').style.display = 'none';
+      document.getElementById('message').classList.remove('show');
+      initGame();
+    }
+
+    // Start loop
+    gameLoop();
+  </script>
+</body>
+</html>

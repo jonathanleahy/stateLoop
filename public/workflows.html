@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StateLoop - Workflow Designer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            secondary: '#8b5cf6',
+          }
+        }
+      }
+    }
+  </script>
+  <script>
+    (function() {
+      const theme = localStorage.getItem('stateloop-theme') || 'dark';
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    })();
+  </script>
+  <style>
+    .node-card {
+      cursor: grab;
+      user-select: none;
+    }
+    .node-card:active {
+      cursor: grabbing;
+    }
+    .node-card.dragging {
+      opacity: 0.8;
+      z-index: 1000;
+    }
+    .workflow-canvas {
+      background-image:
+        linear-gradient(rgba(100, 116, 139, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 116, 139, 0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .port {
+      transition: all 0.2s ease;
+    }
+    .port:hover {
+      transform: scale(1.3);
+    }
+    .port.connecting {
+      background-color: #22c55e;
+    }
+    .status-pending { background-color: #6b7280; }
+    .status-ready { background-color: #3b82f6; }
+    .status-running { background-color: #eab308; }
+    .status-completed { background-color: #22c55e; }
+    .status-failed { background-color: #ef4444; }
+    .status-paused { background-color: #f97316; }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900 text-gray-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-6 py-4 transition-colors">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/" class="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </a>
+        <div>
+          <h1 class="text-xl font-bold text-gray-900 dark:text-white">Workflow Designer</h1>
+          <p class="text-xs text-gray-500 dark:text-slate-400">Chain Scenarios Together</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <select id="workflow-selector" class="bg-gray-100 dark:bg-slate-700 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+          <option value="">Select workflow...</option>
+        </select>
+        <button id="new-workflow-btn" class="bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          New Workflow
+        </button>
+        <a href="/" class="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Home
+        </a>
+        <a href="/scenarios.html" class="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-slate-200 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          Scenarios
+        </a>
+        <button id="theme-toggle" class="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white p-2 rounded-lg transition-colors" title="Toggle theme">
+          <svg id="theme-icon-dark" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="theme-icon-light" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="h-[calc(100vh-73px)] flex">
+    <!-- Scenario Palette -->
+    <div class="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 p-4 overflow-y-auto">
+      <h2 class="font-semibold text-gray-800 dark:text-slate-200 mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        Scenarios
+      </h2>
+      <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">Drag scenarios to the canvas</p>
+      <div id="scenario-palette" class="space-y-2">
+        <!-- Scenarios loaded dynamically -->
+      </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="flex-1 flex flex-col">
+      <!-- Toolbar -->
+      <div class="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 px-4 py-2 flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <button id="play-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50" disabled>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Run
+          </button>
+          <button id="continue-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 hidden">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+            Continue
+          </button>
+        </div>
+        <div class="flex-1"></div>
+        <div class="flex items-center gap-2 text-sm">
+          <span id="workflow-status" class="px-2 py-1 rounded-full text-xs status-pending text-white">Draft</span>
+          <span id="node-count" class="text-gray-500 dark:text-slate-400">0/5 nodes</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="zoom-in-btn" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" title="Zoom in">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7" />
+            </svg>
+          </button>
+          <button id="zoom-out-btn" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" title="Zoom out">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+            </svg>
+          </button>
+          <button id="fit-btn" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors" title="Fit to view">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Command Display -->
+      <div id="command-bar" class="bg-gray-900 text-green-400 px-4 py-3 font-mono text-sm hidden">
+        <div class="flex items-center gap-3">
+          <span class="text-gray-500">$</span>
+          <code id="command-text" class="flex-1 select-all"></code>
+          <button id="copy-command-btn" class="text-gray-400 hover:text-white transition-colors" title="Copy to clipboard">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+          <button id="run-auto-btn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors">
+            Auto-Run
+          </button>
+          <button id="hide-command-btn" class="text-gray-400 hover:text-white transition-colors" title="Hide">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas -->
+      <div id="canvas-container" class="flex-1 relative overflow-hidden workflow-canvas">
+        <canvas id="edge-canvas" class="absolute inset-0 pointer-events-none"></canvas>
+        <div id="nodes-container" class="absolute inset-0">
+          <!-- Nodes rendered here -->
+        </div>
+        <!-- Empty state -->
+        <div id="empty-state" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="text-center p-8 bg-white/80 dark:bg-slate-800/80 rounded-xl">
+            <div class="w-16 h-16 bg-gray-200 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-8 h-8 text-gray-400 dark:text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Design Your Workflow</h3>
+            <p class="text-gray-500 dark:text-slate-400 text-sm max-w-sm">
+              Drag scenarios from the left panel to create nodes. Connect them to define the execution flow.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Details Panel -->
+    <div id="details-panel" class="w-80 bg-white dark:bg-slate-800 border-l border-gray-200 dark:border-slate-700 p-4 overflow-y-auto hidden">
+      <div id="node-details">
+        <h2 class="font-semibold text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Node Details
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Label</label>
+            <input id="node-label" type="text" class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Scenario</label>
+            <div id="node-scenario" class="text-sm text-gray-900 dark:text-slate-200"></div>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Status</label>
+            <div id="node-status" class="text-sm"></div>
+          </div>
+          <div id="node-case-link" class="hidden">
+            <a href="#" class="text-primary hover:underline text-sm flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              View Case
+            </a>
+          </div>
+          <div class="pt-4 border-t border-gray-200 dark:border-slate-700">
+            <button id="rerun-node-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 mb-2 disabled:opacity-50" disabled>
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Re-run Node
+            </button>
+            <button id="delete-node-btn" class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Delete Node
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="workflow-details" class="hidden">
+        <h2 class="font-semibold text-gray-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Workflow Details
+        </h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Name</label>
+            <input id="workflow-name" type="text" class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Description</label>
+            <textarea id="workflow-description" rows="3" class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors resize-none"></textarea>
+          </div>
+          <button id="save-workflow-btn" class="w-full bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Save Changes
+          </button>
+          <button id="delete-workflow-btn" class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            Delete Workflow
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- New Workflow Modal -->
+  <div id="new-workflow-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Create New Workflow</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Name</label>
+          <input id="new-workflow-name" type="text" placeholder="My Workflow" class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Description (optional)</label>
+          <textarea id="new-workflow-desc" rows="3" placeholder="What does this workflow do?" class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-colors resize-none"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button id="cancel-new-workflow" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+          Cancel
+        </button>
+        <button id="create-workflow-btn" class="bg-primary hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/workflow-designer.js"></script>
+</body>
+</html>

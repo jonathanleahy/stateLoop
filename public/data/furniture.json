@@ -1,0 +1,92 @@
+{
+  "categories": {
+    "hospital": {
+      "name": "Hospital & Medical",
+      "icon": "🏥",
+      "items": [
+        { "id": "hospital_bed", "name": "Hospital Bed", "description": "Standard patient bed with adjustable frame", "size": { "w": 80, "h": 50 } },
+        { "id": "bedside_table", "name": "Bedside Table", "description": "Overbed table with water jug", "size": { "w": 25, "h": 30 } },
+        { "id": "nurse_station", "name": "Nurses Station", "description": "Central nursing desk with monitors", "size": { "w": 120, "h": 60 } },
+        { "id": "hand_sanitizer", "name": "Hand Sanitizer", "description": "Wall-mounted sanitizer dispenser", "size": { "w": 15, "h": 25 } },
+        { "id": "medical_cart", "name": "Medical Cart", "description": "Mobile equipment trolley", "size": { "w": 50, "h": 40 } },
+        { "id": "iv_stand", "name": "IV Stand", "description": "Drip stand with hooks", "size": { "w": 20, "h": 60 } },
+        { "id": "wheelchair", "name": "Wheelchair", "description": "Standard wheelchair", "size": { "w": 40, "h": 50 } },
+        { "id": "curtain_divider", "name": "Privacy Curtain", "description": "Bed bay divider curtain", "size": { "w": 10, "h": 80 } }
+      ]
+    },
+    "office": {
+      "name": "Office & Corporate",
+      "icon": "🏢",
+      "items": [
+        { "id": "conference_table", "name": "Conference Table", "description": "Large meeting table", "size": { "w": 300, "h": 150 } },
+        { "id": "office_chair", "name": "Office Chair", "description": "Ergonomic swivel chair", "size": { "w": 30, "h": 30 } },
+        { "id": "whiteboard", "name": "Whiteboard", "description": "Wall-mounted presentation board", "size": { "w": 200, "h": 100 } },
+        { "id": "plant", "name": "Office Plant", "description": "Decorative potted plant", "size": { "w": 30, "h": 45 } },
+        { "id": "desk", "name": "Office Desk", "description": "Standard work desk", "size": { "w": 120, "h": 60 } },
+        { "id": "filing_cabinet", "name": "Filing Cabinet", "description": "Document storage", "size": { "w": 40, "h": 50 } },
+        { "id": "water_cooler", "name": "Water Cooler", "description": "Office water dispenser", "size": { "w": 30, "h": 40 } }
+      ]
+    },
+    "library": {
+      "name": "Library & Study",
+      "icon": "📚",
+      "items": [
+        { "id": "bookshelf", "name": "Bookshelf", "description": "Tall wooden bookcase with books", "size": { "w": 70, "h": 100 } },
+        { "id": "reading_table", "name": "Reading Table", "description": "Study desk with lamp", "size": { "w": 100, "h": 60 } },
+        { "id": "quiet_sign", "name": "Quiet Please Sign", "description": "Wall-mounted library sign", "size": { "w": 80, "h": 25 } },
+        { "id": "armchair", "name": "Reading Armchair", "description": "Comfortable reading chair", "size": { "w": 50, "h": 50 } },
+        { "id": "magazine_rack", "name": "Magazine Rack", "description": "Periodicals display", "size": { "w": 40, "h": 60 } },
+        { "id": "study_carrel", "name": "Study Carrel", "description": "Private study booth", "size": { "w": 80, "h": 80 } }
+      ]
+    },
+    "school": {
+      "name": "School & Education",
+      "icon": "🎓",
+      "items": [
+        { "id": "blackboard", "name": "Blackboard", "description": "Traditional chalkboard", "size": { "w": 400, "h": 120 } },
+        { "id": "teacher_desk", "name": "Teacher's Desk", "description": "Large front desk", "size": { "w": 140, "h": 50 } },
+        { "id": "student_desk", "name": "Student Desk", "description": "Individual student table", "size": { "w": 80, "h": 40 } },
+        { "id": "clock", "name": "Wall Clock", "description": "Classroom clock", "size": { "w": 50, "h": 50 } },
+        { "id": "globe", "name": "Globe", "description": "World globe on stand", "size": { "w": 30, "h": 40 } },
+        { "id": "locker", "name": "Locker", "description": "Student storage locker", "size": { "w": 30, "h": 60 } }
+      ]
+    },
+    "cafe": {
+      "name": "Cafe & Restaurant",
+      "icon": "☕",
+      "items": [
+        { "id": "cafe_counter", "name": "Service Counter", "description": "Main serving counter", "size": { "w": 500, "h": 80 } },
+        { "id": "coffee_machine", "name": "Coffee Machine", "description": "Espresso machine", "size": { "w": 60, "h": 55 } },
+        { "id": "cafe_table", "name": "Cafe Table", "description": "Round bistro table", "size": { "w": 70, "h": 70 } },
+        { "id": "menu_board", "name": "Menu Board", "description": "Chalk menu display", "size": { "w": 150, "h": 50 } },
+        { "id": "hanging_light", "name": "Pendant Light", "description": "Warm hanging lamp", "size": { "w": 24, "h": 24 } },
+        { "id": "bar_stool", "name": "Bar Stool", "description": "Counter height stool", "size": { "w": 30, "h": 40 } },
+        { "id": "pastry_case", "name": "Pastry Display", "description": "Glass pastry case", "size": { "w": 80, "h": 50 } }
+      ]
+    },
+    "outdoor": {
+      "name": "Outdoor & Park",
+      "icon": "🌳",
+      "items": [
+        { "id": "tree", "name": "Tree", "description": "Leafy green tree", "size": { "w": 50, "h": 55 } },
+        { "id": "bench", "name": "Park Bench", "description": "Wooden seating bench", "size": { "w": 40, "h": 22 } },
+        { "id": "lamp_post", "name": "Lamp Post", "description": "Street light", "size": { "w": 20, "h": 80 } },
+        { "id": "fountain", "name": "Fountain", "description": "Decorative water fountain", "size": { "w": 80, "h": 80 } },
+        { "id": "picnic_table", "name": "Picnic Table", "description": "Outdoor dining table", "size": { "w": 100, "h": 60 } },
+        { "id": "flower_bed", "name": "Flower Bed", "description": "Colorful flowers", "size": { "w": 60, "h": 30 } }
+      ]
+    },
+    "common": {
+      "name": "Common Items",
+      "icon": "🪟",
+      "items": [
+        { "id": "window", "name": "Window", "description": "Standard window with view", "size": { "w": 60, "h": 50 } },
+        { "id": "door", "name": "Door", "description": "Standard door", "size": { "w": 50, "h": 100 } },
+        { "id": "bin", "name": "Waste Bin", "description": "Rubbish bin", "size": { "w": 25, "h": 30 } },
+        { "id": "fire_extinguisher", "name": "Fire Extinguisher", "description": "Safety equipment", "size": { "w": 15, "h": 30 } },
+        { "id": "notice_board", "name": "Notice Board", "description": "Bulletin board", "size": { "w": 80, "h": 60 } },
+        { "id": "radiator", "name": "Radiator", "description": "Wall heater", "size": { "w": 60, "h": 30 } }
+      ]
+    }
+  }
+}

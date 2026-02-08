@@ -1,0 +1,3911 @@
+# ⚠️ DEPRECATED - This file is for reference only
+# The live API docs use swagger-generated.json which is auto-generated from
+# #swagger comments in src/api/routes.ts
+#
+# To update API docs:
+#   1. Add/update #swagger comments in routes.ts
+#   2. Run: npm run swagger:generate
+#   3. Run: npm run swagger:compare (optional - verifies sync)
+#
+# The server loads swagger-generated.json at startup.
+# This yaml file exists for human-readable reference and migration comparison.
+
+openapi: 3.0.3
+info:
+  title: StateLoop API
+  description: |
+    Stateless agent orchestration API for multi-party negotiations.
+
+    ## Core Concepts
+    - **Cases**: Negotiation sessions with participants and options
+    - **Participants**: Agents with private agendas
+    - **Messages**: Proposals, counters, accepts, rejects
+    - **Working Documents**: Collaborative documents agents can edit
+    - **Input Documents**: Read-only reference materials
+
+    ## Agent Workflow
+    1. GET `/api/cases/{id}/auto-play` - Get your task prompt
+    2. Process the prompt and decide your response
+    3. POST `/api/cases/{id}/submit` - Submit your response
+    4. Repeat until case resolves
+
+    ## Documentation Resources
+    - **API Docs (Swagger UI)**: [/api-docs](/api-docs) - Interactive API documentation
+    - **Main UI**: [/](/index.html) - Negotiation visualization interface
+    - **Config**: [/scenarios.html](/scenarios.html) - Scenario browser and agent customizer
+    - **Companies**: [/companies.html](/companies.html) - Organization management
+    - **Docs Viewer**: [/docs](/docs) - Markdown documentation browser
+
+  version: 1.0.0
+  contact:
+    name: StateLoop
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+
+paths:
+  /:
+    get:
+      summary: API welcome and discovery
+      description: |
+        Returns API overview, active cases, and available endpoints.
+        This is a human-readable entry point for exploring the API.
+      tags: [Admin]
+      responses:
+        '200':
+          description: API welcome message with active cases list
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /cases:
+    get:
+      summary: List all cases
+      description: |
+        Returns all negotiation cases in the system. Each case includes
+        its current status, participants, and outcome if resolved.
+
+        Use this to find existing cases or monitor active negotiations.
+      tags: [Cases]
+      responses:
+        '200':
+          description: Array of all cases with their current state
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Case'
+
+    post:
+      summary: Create a new case
+      description: |
+        Creates a new negotiation case from a scenario description.
+
+        The scenario text describes the situation, participants, and options.
+        The system parses this to extract agents and choices. After creation,
+        call `/api/cases/{id}/setup` to initialize agents and options via AI,
+        or use the legacy format-based extraction.
+
+        ## Example Scenario
+        ```
+        PUBLIC INFO:
+        Team deciding on project approach.
+
+        OPTIONS:
+        - Agile: 2-week sprints
+        - Waterfall: Detailed planning
+
+        AGENT: Alice
+        AGENDA: Prefers structured approaches.
+        AGREEABILITY: 60
+
+        AGENT: Bob
+        AGENDA: Loves flexibility.
+        AGREEABILITY: 50
+        ```
+      tags: [Cases]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseRequest'
+      responses:
+        '201':
+          description: Case created successfully with parsed scenario data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+
+  /cases/{id}:
+    get:
+      summary: Get case details
+      description: |
+        Returns full details of a specific case including:
+        - Scenario text and metadata
+        - List of participants with their IDs
+        - Available options to choose from
+        - Complete message history
+        - Current turn indicator
+        - Resolution status and outcome
+
+        Use this to get the current state of a negotiation.
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Full case details with all related data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+        '404':
+          $ref: '#/components/responses/CaseNotFound'
+
+  /cases/{id}/history:
+    get:
+      summary: Get conversation history for playback
+      description: |
+        Returns the complete conversation history optimized for UI playback.
+        Includes message sequence, speaker information, and timing data.
+
+        Use this to replay a conversation or export the transcript.
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Complete conversation timeline with message metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseHistory'
+
+  /cases/{id}/next-task:
+    get:
+      summary: Get next task for polling
+      description: |
+        Returns the next available task if one exists. Used by automated
+        systems to poll for work. Prefer `/auto-play` for LLM-driven workflows.
+
+        Returns 204 No Content if no task is available (case resolved or
+        not your turn).
+      tags: [Agent Actions]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Task available with agent context and instructions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+        '204':
+          description: No task available (case resolved or between turns)
+
+  /cases/{id}/auto-play:
+    get:
+      summary: Get agent prompt for current turn
+      description: |
+        Returns a formatted prompt for the current agent's turn.
+        The prompt includes:
+        - Agent's private agenda
+        - Conversation history
+        - Available options
+        - Working documents
+        - Instructions for responding
+      tags: [Agent Actions]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Agent prompt (text/plain)
+          content:
+            text/plain:
+              schema:
+                type: string
+        '204':
+          description: No task available (not your turn or case resolved)
+        '404':
+          $ref: '#/components/responses/CaseNotFound'
+
+    post:
+      summary: Get agent prompt (POST method)
+      description: Same as GET but accepts POST for compatibility
+      tags: [Agent Actions]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Agent prompt (text/plain)
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /cases/{id}/submit:
+    post:
+      summary: Submit agent response
+      description: |
+        Submit your response to the current task. Include document updates
+        to collaborate on shared working documents.
+
+        ## Response Types
+        - `proposal` - Suggest an option (requires optionId)
+        - `counter` - Counter-propose different option (requires optionId)
+        - `accept` - Accept the current proposal (resolves case if proposer differs)
+        - `reject` - Reject without alternative
+        - `message` - General comment or question
+
+        ## Document Updates
+        Include `documentUpdates` array to edit working documents:
+        - `append` - Add content to end
+        - `prepend` - Add content to beginning
+        - `replace` - Replace entire document
+        - `replace_section` - Replace a specific section (requires `section` field). Note: If the specified section is not found, the document is returned unchanged and a warning is logged server-side.
+
+      tags: [Agent Actions]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitRequest'
+      responses:
+        '200':
+          description: Response accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+            text/plain:
+              schema:
+                type: string
+                description: When case is still active, includes next agent's prompt
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/CaseNotFound'
+        '409':
+          description: Not your turn or case already resolved
+        '410':
+          description: Task expired
+
+  /cases/{id}/resolve:
+    post:
+      summary: Manually resolve a case
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - outcome
+              properties:
+                outcome:
+                  type: string
+                  enum: [agreed, failed, abandoned]
+                selectedOptionId:
+                  type: string
+                  nullable: true
+                summary:
+                  type: string
+      responses:
+        '200':
+          description: Case resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+
+  /cases/{id}/boss-message:
+    post:
+      summary: Send a boss message to agents
+      description: Boss messages are private guidance visible to agents but not part of the conversation
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                targetAgent:
+                  type: string
+                  description: Optional - target specific agent by ID
+      responses:
+        '201':
+          description: Boss message sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  content:
+                    type: string
+                  timestamp:
+                    type: string
+
+  /cases/{id}/agent-prompt:
+    get:
+      summary: Get raw agent prompt
+      tags: [Agent Actions]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: agentId
+          in: query
+          schema:
+            type: string
+          description: Optional agent ID to get prompt for
+      responses:
+        '200':
+          description: Agent prompt text
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /cases/{id}/set-appearance:
+    post:
+      summary: Set agent appearance
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agentId
+              properties:
+                agentId:
+                  type: string
+                accessory:
+                  type: string
+                bodyStyle:
+                  type: string
+                color:
+                  type: string
+      responses:
+        '200':
+          description: Appearance updated
+
+  /cases/{id}/add-option:
+    post:
+      summary: Add an option to the case
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Option'
+      responses:
+        '201':
+          description: Option added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Option'
+
+  /cases/{id}/reset:
+    post:
+      summary: Reset case messages (keep agents/options)
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Case reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+
+  /cases/{id}/reopen:
+    post:
+      summary: Reopen a resolved case
+      description: |
+        Reopens a resolved case for continued discussion.
+        Automatically increases MAX_ROUNDS by 10 (configurable) to prevent immediate timeout.
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Reason for reopening
+                  default: "Manually reopened"
+                additionalRounds:
+                  type: integer
+                  description: Extra rounds to add to MAX_ROUNDS
+                  default: 10
+      responses:
+        '200':
+          description: Case reopened
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  caseId:
+                    type: string
+                  currentTurn:
+                    type: string
+                  additionalRounds:
+                    type: integer
+                  reason:
+                    type: string
+
+  /cases/{id}/run:
+    post:
+      summary: Run case to completion (simulation)
+      description: |
+        Automatically runs the case using built-in response generation.
+        Useful for testing scenarios without external LLM.
+
+        **Document Writing:** When working documents exist, the simulation
+        automatically writes to them based on message type.
+      tags: [Simulation]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: maxRounds
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Maximum rounds before stopping
+      responses:
+        '200':
+          description: Simulation complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [resolved, active, already_resolved]
+                  outcome:
+                    type: string
+                    enum: [agreed, failed]
+                    nullable: true
+                  rounds:
+                    type: integer
+                  messageCount:
+                    type: integer
+                  log:
+                    type: array
+                    items:
+                      type: string
+
+  /cases/{id}/agents:
+    post:
+      summary: Add agents to case (bulk)
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agents:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Participant'
+      responses:
+        '200':
+          description: Agents added
+
+  /cases/{id}/options:
+    post:
+      summary: Add options to case (bulk)
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                options:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Option'
+      responses:
+        '200':
+          description: Options added
+
+  /cases/{id}/setup:
+    post:
+      summary: AI setup - bulk create all case entities
+      description: |
+        Used by AI to submit complete case setup including agents, options,
+        documents, and location in a single request.
+
+        ## Validation
+        The request is validated before processing. If validation fails, a 400 response
+        is returned with detailed error messages so the AI can fix and retry.
+
+        ### Required Fields
+        - `setup.agents` - At least 2 agents with `name` and `agenda`
+        - `setup.options` - Required if taskType is 'options' or 'both'
+        - `firstAgent.name` - Must match an agent name
+        - `firstAgent.message` - Opening message text
+
+        ### Validated Fields
+        - `agreeability` must be 0-100 if provided
+        - Agent names must be non-empty strings
+        - Option names must be non-empty strings
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetupRequest'
+      responses:
+        '200':
+          description: Setup complete
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/CaseNotFound'
+
+  /cases/{id}/input-documents:
+    get:
+      summary: List input documents
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Input documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InputDocument'
+
+    post:
+      summary: Add input document
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - content
+              properties:
+                name:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '201':
+          description: Document added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputDocument'
+
+  /cases/{id}/input-documents/{name}:
+    get:
+      summary: Get input document by name
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputDocument'
+        '404':
+          description: Document not found
+
+  /cases/{id}/documents:
+    get:
+      summary: Get all documents for a case
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: All documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  input:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InputDocument'
+                  working:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkingDocument'
+
+    post:
+      summary: Create working document
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                content:
+                  type: string
+                  default: ""
+                docType:
+                  type: string
+                  enum: [freeform, template, structured]
+                  default: freeform
+                template:
+                  type: string
+      responses:
+        '201':
+          description: Document created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDocument'
+
+  /cases/{id}/documents/{name}:
+    get:
+      summary: Get working document by name
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDocument'
+        '404':
+          description: Document not found
+
+    put:
+      summary: Replace working document content
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+      responses:
+        '200':
+          description: Document updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDocument'
+
+    patch:
+      summary: Patch working document (append/prepend/replace_section)
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentUpdate'
+      responses:
+        '200':
+          description: Document patched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingDocument'
+
+  /cases/{id}/documents/{name}/history:
+    get:
+      summary: Get document edit history
+      tags: [Documents]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Edit history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentEdit'
+
+  /cases/{id}/output:
+    get:
+      summary: Get case output document
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Output document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  output:
+                    type: string
+                    nullable: true
+
+    post:
+      summary: Set case output document
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - output
+              properties:
+                output:
+                  type: string
+      responses:
+        '200':
+          description: Output set
+
+  /auto-play:
+    get:
+      summary: Global auto-play - find any case needing action
+      tags: [Agent Actions]
+      responses:
+        '200':
+          description: Agent prompt for next available case
+          content:
+            text/plain:
+              schema:
+                type: string
+        '204':
+          description: No cases need action
+
+  /scenarios:
+    get:
+      summary: List available scenarios
+      tags: [Scenarios]
+      responses:
+        '200':
+          description: List of scenario names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /scenarios/{name}:
+    get:
+      summary: Get scenario content
+      tags: [Scenarios]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Scenario content
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Scenario not found
+
+  /scenarios/{name}/load:
+    post:
+      summary: Load a scenario as a new case
+      tags: [Scenarios]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Case created from scenario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseWithRelations'
+
+  /validate-scenario:
+    post:
+      summary: Validate scenario text
+      tags: [Scenarios]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scenario
+              properties:
+                scenario:
+                  type: string
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  parsed:
+                    type: object
+                    description: Parsed scenario data if valid
+
+  /furniture:
+    get:
+      summary: Get furniture catalog
+      description: Returns all available furniture items by category for scene setup
+      tags: [Admin]
+      responses:
+        '200':
+          description: Furniture catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        icon:
+                          type: string
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              description:
+                                type: string
+                              size:
+                                type: object
+                                properties:
+                                  w:
+                                    type: integer
+                                  h:
+                                    type: integer
+
+  /agents:
+    get:
+      summary: List saved agent templates
+      tags: [Agents]
+      responses:
+        '200':
+          description: List of agent names
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /agents/{name}:
+    get:
+      summary: Get agent template
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent template
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: Agent not found
+
+    delete:
+      summary: Delete agent template
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent deleted
+        '404':
+          description: Agent not found
+
+  /agents/{name}/history:
+    get:
+      summary: Get agent conversation history
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Conversation history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    role:
+                      type: string
+                    content:
+                      type: string
+
+    post:
+      summary: Add to agent conversation history
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+                - content
+              properties:
+                role:
+                  type: string
+                content:
+                  type: string
+      responses:
+        '200':
+          description: History updated
+
+  /agents/{name}/profile:
+    get:
+      summary: Get agent profile
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agent profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentProfile'
+        '404':
+          description: Agent not found
+
+    put:
+      summary: Create or update agent profile
+      description: |
+        Creates a new profile or updates an existing one for the specified agent.
+        The profile contains personality traits, background, and other characteristics.
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentProfile'
+      responses:
+        '200':
+          description: Profile created or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentProfile'
+
+    delete:
+      summary: Delete agent profile
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Profile deleted
+
+  /agents/{name}/character-description:
+    get:
+      summary: Get agent character description for AI
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character description text
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /agents/{name}/image-prompt:
+    get:
+      summary: Get image generation prompt for agent
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image prompt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prompt:
+                    type: string
+
+  /reset:
+    post:
+      summary: Reset database (clear all cases)
+      tags: [Admin]
+      responses:
+        '200':
+          description: Database reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
+  /logs:
+    get:
+      summary: Get request logs
+      tags: [Admin]
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Request logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RequestLog'
+                  total:
+                    type: integer
+
+  # ============================================
+  # Company Endpoints
+  # ============================================
+
+  /companies:
+    get:
+      summary: List all companies
+      tags: [Companies]
+      responses:
+        '200':
+          description: List of companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Company'
+
+    post:
+      summary: Create a new company
+      tags: [Companies]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompanyRequest'
+      responses:
+        '201':
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+  /companies/{id}:
+    get:
+      summary: Get company details
+      tags: [Companies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company with relations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyWithRelations'
+        '404':
+          description: Company not found
+
+    put:
+      summary: Update company details
+      tags: [Companies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCompanyRequest'
+      responses:
+        '200':
+          description: Company updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+
+    delete:
+      summary: Delete a company
+      tags: [Companies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Company deleted
+
+  /companies/{id}/auto-play:
+    get:
+      summary: Get AI setup prompt for company
+      tags: [Companies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Setup prompt
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /companies/{id}/setup:
+    post:
+      summary: AI submits bulk company setup
+      tags: [Companies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanySetupRequest'
+      responses:
+        '200':
+          description: Setup complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  company:
+                    $ref: '#/components/schemas/Company'
+                  created:
+                    type: object
+                    properties:
+                      buildings:
+                        type: integer
+                      rooms:
+                        type: integer
+                      policies:
+                        type: integer
+                      employees:
+                        type: integer
+
+  /companies/{id}/buildings:
+    get:
+      summary: List company buildings
+      tags: [Buildings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of buildings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Building'
+
+    post:
+      summary: Create a building
+      tags: [Buildings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBuildingRequest'
+      responses:
+        '201':
+          description: Building created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Building'
+
+  /companies/{id}/buildings/{buildingId}:
+    get:
+      summary: Get building with rooms
+      tags: [Buildings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: buildingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Building details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuildingWithRooms'
+
+    delete:
+      summary: Delete a building
+      tags: [Buildings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: buildingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Building deleted
+
+  /companies/{id}/buildings/{buildingId}/rooms:
+    get:
+      summary: List rooms in building
+      tags: [Rooms]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: buildingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+
+    post:
+      summary: Create a room
+      tags: [Rooms]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: buildingId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+
+  /companies/{id}/rooms/{roomId}:
+    get:
+      summary: Get room details
+      tags: [Rooms]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+
+    delete:
+      summary: Delete a room
+      tags: [Rooms]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Room deleted
+
+  /companies/{id}/policies:
+    get:
+      summary: List company policies
+      tags: [Policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+
+    post:
+      summary: Create a policy
+      tags: [Policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePolicyRequest'
+      responses:
+        '201':
+          description: Policy created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+
+  /companies/{id}/policies/{policyId}:
+    get:
+      summary: Get policy details
+      tags: [Policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+
+    delete:
+      summary: Delete a policy
+      tags: [Policies]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy deleted
+
+  /companies/{id}/employees:
+    get:
+      summary: List company employees
+      tags: [Employees]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of employees
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employee'
+
+    post:
+      summary: Create an employee
+      tags: [Employees]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeRequest'
+      responses:
+        '201':
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+
+  /policy-categories:
+    get:
+      summary: List all policy categories
+      tags: [Policies]
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PolicyCategory'
+
+  /agents/{name}/employment:
+    get:
+      summary: Get agent employment history
+      tags: [Agents]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Employment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employment'
+
+  # ============================================
+  # Case-Company Integration
+  # ============================================
+
+  /cases/{id}/company:
+    get:
+      summary: Get case company context
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Company context
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseCompanyContext'
+
+    post:
+      summary: Associate case with company
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - companyId
+              properties:
+                companyId:
+                  type: string
+                buildingId:
+                  type: string
+                roomId:
+                  type: string
+      responses:
+        '200':
+          description: Association created
+
+  /cases/{id}/policies:
+    get:
+      summary: List policies available to case
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Available policies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Policy'
+
+  /cases/{id}/policies/{policyId}:
+    get:
+      summary: Get specific policy for case
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - name: policyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Policy'
+
+  /cases/{id}/agent-roles:
+    get:
+      summary: List agent roles for case
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      responses:
+        '200':
+          description: Agent roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CaseAgentRole'
+
+    post:
+      summary: Create per-case role for participant
+      tags: [Cases]
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCaseAgentRoleRequest'
+      responses:
+        '201':
+          description: Role created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseAgentRole'
+
+  # ============================================
+  # Workflow Endpoints
+  # ============================================
+
+  /workflows:
+    get:
+      summary: List all workflows
+      description: Returns all workflows with their current status.
+      tags: [Workflows]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status
+          required: false
+          schema:
+            type: string
+            enum: [pending, active, completed, failed]
+      responses:
+        '200':
+          description: List of workflows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflows:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Workflow'
+
+    post:
+      summary: Create a workflow
+      description: Creates a new workflow, optionally from a template.
+      tags: [Workflows]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  description: Workflow name
+                description:
+                  type: string
+                  description: Workflow description
+                templateName:
+                  type: string
+                  description: Template to use (optional)
+                stages:
+                  type: array
+                  description: Custom stages (if not using template)
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      type:
+                        type: string
+                        enum: [collaborative, solo, review]
+                      description:
+                        type: string
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+        '400':
+          description: Invalid request
+
+  /workflows/{id}:
+    get:
+      summary: Get workflow details
+      description: Returns workflow with its stages and current status.
+      tags: [Workflows]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Workflow ID
+      responses:
+        '200':
+          description: Workflow details with stages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowWithStages'
+        '404':
+          description: Workflow not found
+
+    delete:
+      summary: Delete a workflow
+      description: Deletes a workflow and all its stages.
+      tags: [Workflows]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Workflow ID
+      responses:
+        '204':
+          description: Workflow deleted
+        '404':
+          description: Workflow not found
+
+  /workflows/{id}/start:
+    post:
+      summary: Start a workflow
+      description: Activates a pending workflow and sets its inputs.
+      tags: [Workflows]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Workflow ID
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                inputs:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Input parameters for the workflow
+      responses:
+        '200':
+          description: Workflow started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowWithStages'
+        '400':
+          description: Workflow cannot be started
+        '404':
+          description: Workflow not found
+
+  /workflows/{id}/stages/{stageId}/complete:
+    post:
+      summary: Complete a workflow stage
+      description: Marks a stage as completed and advances to the next stage.
+      tags: [Workflows]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Workflow ID
+        - name: stageId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Stage ID
+      responses:
+        '200':
+          description: Stage completed, workflow updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowWithStages'
+        '400':
+          description: Stage cannot be completed
+        '404':
+          description: Workflow or stage not found
+
+  /workflows/{id}/outputs:
+    put:
+      summary: Set workflow outputs
+      description: Sets or updates the workflow outputs.
+      tags: [Workflows]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Workflow ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+      responses:
+        '200':
+          description: Outputs updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workflow'
+        '404':
+          description: Workflow not found
+
+  # ============================================
+  # Workflow Template Endpoints
+  # ============================================
+
+  /workflow-templates:
+    get:
+      summary: List workflow templates
+      description: Returns all available workflow templates that can be used to create workflows.
+      tags: [Workflows]
+      responses:
+        '200':
+          description: List of workflow templates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  templates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        stageCount:
+                          type: number
+
+  /workflow-templates/{name}:
+    get:
+      summary: Get workflow template
+      description: Returns details of a specific workflow template including its stages.
+      tags: [Workflows]
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Template name/ID
+      responses:
+        '200':
+          description: Workflow template details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowTemplate'
+        '404':
+          description: Template not found
+
+  # ============================================
+  # Goal Endpoints
+  # ============================================
+
+  /goals:
+    get:
+      summary: List all goals
+      description: Returns all goals with their current status.
+      tags: [Goals]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status
+          required: false
+          schema:
+            type: string
+            enum: [pending, planning, executing, completed, failed]
+      responses:
+        '200':
+          description: List of goals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  goals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Goal'
+
+    post:
+      summary: Create a goal
+      description: Creates a new high-level goal that can be decomposed into a workflow.
+      tags: [Goals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description:
+                  type: string
+                  description: Goal description
+                context:
+                  type: string
+                  description: Additional context for planning
+                constraints:
+                  type: array
+                  items:
+                    type: string
+                  description: Constraints to consider
+      responses:
+        '201':
+          description: Goal created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '400':
+          description: Invalid request
+
+  /goals/{id}:
+    get:
+      summary: Get goal details
+      description: Returns goal with its plan and associated workflow.
+      tags: [Goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+      responses:
+        '200':
+          description: Goal details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '404':
+          description: Goal not found
+
+    delete:
+      summary: Delete a goal
+      description: Deletes a goal. Associated workflow is not deleted.
+      tags: [Goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+      responses:
+        '204':
+          description: Goal deleted
+        '404':
+          description: Goal not found
+
+  /goals/{id}/plan:
+    put:
+      summary: Set goal plan
+      description: Sets the execution plan for a goal.
+      tags: [Goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [steps]
+              properties:
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      type:
+                        type: string
+                        enum: [collaborative, solo, review]
+                      agentCount:
+                        type: number
+                estimatedDuration:
+                  type: string
+                risks:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Plan set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '404':
+          description: Goal not found
+
+  /goals/{id}/execute:
+    post:
+      summary: Execute goal
+      description: Creates a workflow from the goal plan and starts execution.
+      tags: [Goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+      responses:
+        '200':
+          description: Workflow created and started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  goal:
+                    $ref: '#/components/schemas/Goal'
+                  workflow:
+                    $ref: '#/components/schemas/WorkflowWithStages'
+        '400':
+          description: Goal has no plan or already executing
+        '404':
+          description: Goal not found
+
+  /goals/{id}/output:
+    put:
+      summary: Set goal output
+      description: Sets the final output/result of the goal.
+      tags: [Goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Goal ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [output]
+              properties:
+                output:
+                  type: string
+                  description: Goal output/result
+      responses:
+        '200':
+          description: Output set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Goal'
+        '404':
+          description: Goal not found
+
+components:
+  parameters:
+    CaseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Case ID (e.g., "case-abc123")
+
+  responses:
+    CaseNotFound:
+      description: Case not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+  schemas:
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+        scenario:
+          type: string
+        status:
+          type: string
+          enum: [active, resolved, abandoned]
+        currentTurn:
+          type: string
+          nullable: true
+        outcome:
+          type: string
+          enum: [agreed, failed, abandoned]
+          nullable: true
+        selectedOptionId:
+          type: string
+          nullable: true
+        resolutionSummary:
+          type: string
+          nullable: true
+        maxRounds:
+          type: integer
+          nullable: true
+        taskType:
+          type: string
+          enum: [options, document, both]
+          nullable: true
+        taskOutput:
+          type: string
+          nullable: true
+        locationType:
+          type: string
+          enum: [hospital, office, school, library, cafe, park, studio, courtroom, outdoor]
+          nullable: true
+        locationName:
+          type: string
+          nullable: true
+        locationFurniture:
+          type: array
+          items:
+            type: string
+          nullable: true
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: Overall randomness for agent responses (0=deterministic, 1=creative)
+        moodSwings:
+          type: boolean
+          default: false
+          description: Whether agent moods evolve based on conversation
+        randomEvents:
+          type: boolean
+          default: false
+          description: Whether to inject random interruptions/events
+        chaosLevel:
+          type: string
+          enum: [calm, normal, heated, chaotic]
+          default: normal
+          description: Overall unpredictability level
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CaseWithRelations:
+      allOf:
+        - $ref: '#/components/schemas/Case'
+        - type: object
+          properties:
+            participants:
+              type: array
+              items:
+                $ref: '#/components/schemas/Participant'
+            options:
+              type: array
+              items:
+                $ref: '#/components/schemas/Option'
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+            workingDocuments:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkingDocument'
+            bossMessages:
+              type: array
+              items:
+                $ref: '#/components/schemas/BossMessage'
+
+    Participant:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        agenda:
+          type: string
+          description: Private agenda text
+        role:
+          type: string
+          description: Display role (e.g., "Doctor", "Patient")
+        preferences:
+          type: array
+          items:
+            type: string
+        constraints:
+          type: array
+          items:
+            type: string
+        isPayer:
+          type: boolean
+        agreeability:
+          type: integer
+          minimum: 0
+          maximum: 100
+        variability:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.5
+          description: How unpredictable this agent is (0=predictable, 1=chaotic)
+        mood:
+          type: string
+          enum: [neutral, enthusiastic, skeptical, tired, frustrated, distracted, inspired]
+          default: neutral
+          description: Current emotional state affecting behavior
+        quirks:
+          type: array
+          items:
+            type: string
+          description: Behavioral tendencies (e.g., "gets sidetracked by references")
+        triggers:
+          type: array
+          items:
+            type: string
+          description: Topics that provoke strong reactions
+        appearance:
+          $ref: '#/components/schemas/Appearance'
+
+    Appearance:
+      type: object
+      properties:
+        accessory:
+          type: string
+        bodyStyle:
+          type: string
+        color:
+          type: string
+
+    AgentProfile:
+      type: object
+      description: Complete profile for a persistent agent with physical attributes, personality, and life history
+      properties:
+        name:
+          type: string
+          description: Unique agent identifier
+        appearance:
+          $ref: '#/components/schemas/Appearance'
+        agenda:
+          type: string
+          nullable: true
+        agreeability:
+          type: integer
+          nullable: true
+        scenarioSource:
+          type: string
+          nullable: true
+
+        # Identity
+        dateOfBirth:
+          type: string
+          format: date
+          nullable: true
+        placeOfBirthCity:
+          type: string
+          nullable: true
+        placeOfBirthCountry:
+          type: string
+          nullable: true
+        nationality:
+          type: string
+          nullable: true
+        nationalities:
+          type: array
+          items:
+            type: string
+          nullable: true
+        sex:
+          type: string
+          enum: [male, female, non-binary, other]
+          nullable: true
+
+        # Physical attributes
+        heightCm:
+          type: number
+          nullable: true
+        weightKg:
+          type: number
+          nullable: true
+        build:
+          type: string
+          enum: [slim, athletic, average, stocky, heavyset, muscular]
+          nullable: true
+        skinTone:
+          type: string
+          nullable: true
+        ageAppearance:
+          type: integer
+          nullable: true
+
+        # Backstory & Personality
+        backstory:
+          type: string
+          nullable: true
+          description: Agent's background story
+        personalityTraits:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: List of personality traits
+
+        # Life History
+        childhoodSummary:
+          type: string
+          nullable: true
+        childhoodLocation:
+          type: string
+          nullable: true
+        familyBackground:
+          type: string
+          nullable: true
+        education:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Schools, degrees, certifications
+        careerPath:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Job history in chronological order
+        significantEvents:
+          type: array
+          items:
+            type: string
+          nullable: true
+        formativeExperiences:
+          type: array
+          items:
+            type: string
+          nullable: true
+        currentSituation:
+          type: string
+          nullable: true
+        fears:
+          type: array
+          items:
+            type: string
+          nullable: true
+        desires:
+          type: array
+          items:
+            type: string
+          nullable: true
+        secrets:
+          type: array
+          items:
+            type: string
+          nullable: true
+        skills:
+          type: array
+          items:
+            type: string
+          nullable: true
+        hobbies:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+        # Photo
+        photoUrl:
+          type: string
+          nullable: true
+        photoPrompt:
+          type: string
+          nullable: true
+          description: AI image generation prompt
+
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Option:
+      type: object
+      description: An option to choose from
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+        priceRange:
+          type: string
+        features:
+          type: array
+          items:
+            type: string
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+          description: Participant ID
+        type:
+          type: string
+          enum: [proposal, counter, accept, reject, message]
+        content:
+          type: string
+        thoughts:
+          type: string
+          nullable: true
+          description: Agent's internal reasoning (visible to observers)
+        optionId:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    BossMessage:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        targetAgent:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+
+    InputDocument:
+      type: object
+      description: Read-only reference document
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        content:
+          type: string
+        source:
+          type: string
+          enum: [inline, file]
+
+    WorkingDocument:
+      type: object
+      description: Collaborative document agents can edit
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        content:
+          type: string
+        docType:
+          type: string
+          enum: [freeform, template, structured]
+        template:
+          type: string
+          nullable: true
+        lastEditedBy:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+
+    DocumentEdit:
+      type: object
+      description: A single document edit in history
+      properties:
+        id:
+          type: string
+        documentId:
+          type: string
+        agentId:
+          type: string
+        agentName:
+          type: string
+          nullable: true
+        action:
+          type: string
+          enum: [append, prepend, replace, replace_section]
+        previousContent:
+          type: string
+        newContent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    AgentTask:
+      type: object
+      properties:
+        caseId:
+          type: string
+        taskId:
+          type: string
+        role:
+          $ref: '#/components/schemas/Participant'
+        scenario:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+        conversationHistory:
+          type: array
+          items:
+            type: object
+        instruction:
+          type: string
+        bossMessages:
+          type: array
+          items:
+            type: object
+        inputDocuments:
+          type: array
+          items:
+            type: object
+        workingDocuments:
+          type: array
+          items:
+            type: object
+
+    SetupRequest:
+      type: object
+      description: AI setup request with all case entities
+      properties:
+        title:
+          type: string
+        agents:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              role:
+                type: string
+              agenda:
+                type: string
+              agreeability:
+                type: integer
+              appearance:
+                $ref: '#/components/schemas/Appearance'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+        location:
+          type: object
+          properties:
+            type:
+              type: string
+            name:
+              type: string
+            furniture:
+              type: array
+              items:
+                type: string
+        inputDocuments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              content:
+                type: string
+        workingDocuments:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              content:
+                type: string
+              docType:
+                type: string
+
+    CreateCaseRequest:
+      type: object
+      required:
+        - scenario
+      properties:
+        scenario:
+          type: string
+          description: Full scenario text with AGENT sections
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/Option'
+
+    SubmitRequest:
+      type: object
+      required:
+        - taskId
+        - agentId
+        - response
+      properties:
+        taskId:
+          type: string
+          description: Task ID from the prompt
+        agentId:
+          type: string
+          description: Your participant ID
+        response:
+          type: object
+          required:
+            - type
+            - content
+          properties:
+            type:
+              type: string
+              enum: [proposal, counter, accept, reject, message]
+            content:
+              type: string
+              description: Your spoken message
+            thoughts:
+              type: string
+              description: Internal reasoning (shown to observers, not other agents)
+            optionId:
+              type: string
+              description: Option ID (required for proposal/counter)
+            documentUpdates:
+              type: array
+              description: Updates to working documents
+              items:
+                $ref: '#/components/schemas/DocumentUpdate'
+
+    DocumentUpdate:
+      type: object
+      required:
+        - document
+        - action
+        - content
+      properties:
+        document:
+          type: string
+          description: Name of the working document
+        action:
+          type: string
+          enum: [append, prepend, replace, replace_section]
+        content:
+          type: string
+          description: Content to add/replace
+        section:
+          type: string
+          description: Section name (required for replace_section). If the section is not found in the document, no changes are made and the document is returned unchanged.
+
+    SubmitResponse:
+      type: object
+      properties:
+        messageId:
+          type: string
+        caseStatus:
+          type: string
+          enum: [active, resolved]
+        nextTurn:
+          type: string
+          nullable: true
+
+    CaseHistory:
+      type: object
+      properties:
+        caseId:
+          type: string
+        scenario:
+          type: string
+        status:
+          type: string
+        outcome:
+          type: string
+          nullable: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Participant'
+        timeline:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              messageId:
+                type: string
+              speaker:
+                type: string
+              type:
+                type: string
+              content:
+                type: string
+              thoughts:
+                type: string
+                nullable: true
+              timestamp:
+                type: string
+        totalMessages:
+          type: integer
+
+    RequestLog:
+      type: object
+      properties:
+        id:
+          type: string
+        method:
+          type: string
+        path:
+          type: string
+        statusCode:
+          type: integer
+        durationMs:
+          type: integer
+        timestamp:
+          type: string
+
+    # ============================================
+    # Company Schemas
+    # ============================================
+
+    Company:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        industry:
+          type: string
+          nullable: true
+        size:
+          type: string
+          enum: [small, medium, large, enterprise]
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        logoUrl:
+          type: string
+          nullable: true
+        primaryColor:
+          type: string
+          nullable: true
+        secondaryColor:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CompanyWithRelations:
+      allOf:
+        - $ref: '#/components/schemas/Company'
+        - type: object
+          properties:
+            buildings:
+              type: array
+              items:
+                $ref: '#/components/schemas/BuildingWithRooms'
+            policies:
+              type: array
+              items:
+                $ref: '#/components/schemas/Policy'
+            employees:
+              type: array
+              items:
+                $ref: '#/components/schemas/Employee'
+
+    CreateCompanyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    UpdateCompanyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        industry:
+          type: string
+        size:
+          type: string
+          enum: [small, medium, large, enterprise]
+        description:
+          type: string
+        logoUrl:
+          type: string
+        primaryColor:
+          type: string
+        secondaryColor:
+          type: string
+
+    CompanySetupRequest:
+      type: object
+      properties:
+        setup:
+          type: object
+          properties:
+            industry:
+              type: string
+            size:
+              type: string
+            description:
+              type: string
+            primaryColor:
+              type: string
+            secondaryColor:
+              type: string
+            buildings:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  address:
+                    type: string
+                  city:
+                    type: string
+                  country:
+                    type: string
+                  description:
+                    type: string
+                  locationType:
+                    type: string
+                  rooms:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        roomType:
+                          type: string
+                        floor:
+                          type: integer
+                        capacity:
+                          type: integer
+                        furniture:
+                          type: array
+                          items:
+                            type: string
+                        description:
+                          type: string
+            policies:
+              type: array
+              items:
+                type: object
+                properties:
+                  category:
+                    type: string
+                  title:
+                    type: string
+                  summary:
+                    type: string
+                  fullText:
+                    type: string
+                  effectiveDate:
+                    type: string
+            employees:
+              type: array
+              items:
+                type: object
+                properties:
+                  agentName:
+                    type: string
+                  jobTitle:
+                    type: string
+                  department:
+                    type: string
+                  employmentType:
+                    type: string
+
+    Building:
+      type: object
+      properties:
+        id:
+          type: string
+        companyId:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        locationType:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    BuildingWithRooms:
+      allOf:
+        - $ref: '#/components/schemas/Building'
+        - type: object
+          properties:
+            rooms:
+              type: array
+              items:
+                $ref: '#/components/schemas/Room'
+
+    CreateBuildingRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        description:
+          type: string
+        locationType:
+          type: string
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+        buildingId:
+          type: string
+        name:
+          type: string
+        roomType:
+          type: string
+          enum: [office, meeting_room, break_room, studio, reception, storage, lab, other]
+        floor:
+          type: integer
+          nullable: true
+        capacity:
+          type: integer
+          nullable: true
+        furniture:
+          type: array
+          items:
+            type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateRoomRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        roomType:
+          type: string
+          enum: [office, meeting_room, break_room, studio, reception, storage, lab, other]
+        floor:
+          type: integer
+        capacity:
+          type: integer
+        furniture:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+
+    Policy:
+      type: object
+      properties:
+        id:
+          type: string
+        companyId:
+          type: string
+        categoryId:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        fullText:
+          type: string
+          nullable: true
+        effectiveDate:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreatePolicyRequest:
+      type: object
+      required:
+        - categoryId
+        - title
+      properties:
+        categoryId:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        fullText:
+          type: string
+        effectiveDate:
+          type: string
+
+    PolicyCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+        companyId:
+          type: string
+        agentName:
+          type: string
+        jobTitle:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        managerAgentName:
+          type: string
+          nullable: true
+        employmentType:
+          type: string
+          enum: [full_time, part_time, contractor]
+        startDate:
+          type: string
+          nullable: true
+        endDate:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateEmployeeRequest:
+      type: object
+      required:
+        - agentName
+      properties:
+        agentName:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        managerAgentName:
+          type: string
+        employmentType:
+          type: string
+          enum: [full_time, part_time, contractor]
+        startDate:
+          type: string
+
+    Employment:
+      type: object
+      properties:
+        companyId:
+          type: string
+        companyName:
+          type: string
+        jobTitle:
+          type: string
+        department:
+          type: string
+        employmentType:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+          nullable: true
+
+    CaseCompanyContext:
+      type: object
+      properties:
+        company:
+          $ref: '#/components/schemas/Company'
+        building:
+          $ref: '#/components/schemas/Building'
+        room:
+          $ref: '#/components/schemas/Room'
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/Policy'
+
+    CaseAgentRole:
+      type: object
+      properties:
+        id:
+          type: string
+        caseId:
+          type: string
+        participantId:
+          type: string
+        roleType:
+          type: string
+          enum: [visitor, contractor, temp, consultant]
+        roleTitle:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        accessLevel:
+          type: string
+          enum: [full, limited, escorted]
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateCaseAgentRoleRequest:
+      type: object
+      required:
+        - participantId
+        - roleType
+      properties:
+        participantId:
+          type: string
+        roleType:
+          type: string
+          enum: [visitor, contractor, temp, consultant]
+        roleTitle:
+          type: string
+        department:
+          type: string
+        accessLevel:
+          type: string
+          enum: [full, limited, escorted]
+        notes:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    ValidationError:
+      type: object
+      description: |
+        Returned when AI submits invalid JSON structure.
+        The `details` array lists ALL validation issues (not just the first),
+        allowing the AI to fix everything in a single retry.
+      properties:
+        error:
+          type: string
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          example: "Validation failed"
+        details:
+          type: array
+          description: List of all validation errors found
+          items:
+            type: string
+          example:
+            - "Agent 'Alice' missing required field: agenda"
+            - "Agent 'Bob' agreeability must be 0-100, got: 150"
+        hint:
+          type: string
+          description: Actionable guidance for fixing the errors
+          example: "Fix the issues above and resubmit. Available option IDs: case-123-rest-1, case-123-rest-2"
+
+    JSONParseError:
+      type: object
+      description: Returned when request body is not valid JSON
+      properties:
+        error:
+          type: string
+          example: "JSON_PARSE_ERROR"
+        message:
+          type: string
+          example: "Invalid JSON in request body"
+        details:
+          type: string
+          description: The JSON parse error message
+          example: "Unexpected token 'x' at position 123"
+        hint:
+          type: string
+          example: "Ensure the request body is valid JSON. Common issues: unescaped quotes, trailing commas, single quotes instead of double quotes."
+
+    # ============================================
+    # Workflow Schemas
+    # ============================================
+
+    Workflow:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, active, completed, failed]
+        currentStageIndex:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    WorkflowWithStages:
+      allOf:
+        - $ref: '#/components/schemas/Workflow'
+        - type: object
+          properties:
+            stages:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkflowStage'
+
+    WorkflowStage:
+      type: object
+      properties:
+        id:
+          type: string
+        stageIndex:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: [collaborative, solo, review]
+        status:
+          type: string
+          enum: [pending, active, completed, skipped]
+        caseId:
+          type: string
+          nullable: true
+        outputDocument:
+          type: string
+          nullable: true
+        outputPreview:
+          type: string
+          nullable: true
+
+    WorkflowProgress:
+      type: object
+      properties:
+        workflowId:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        progress:
+          type: object
+          properties:
+            percentComplete:
+              type: integer
+            totalStages:
+              type: integer
+            completedStages:
+              type: integer
+            currentStage:
+              type: string
+              nullable: true
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              index:
+                type: integer
+              name:
+                type: string
+              status:
+                type: string
+              caseId:
+                type: string
+                nullable: true
+              duration:
+                type: string
+                nullable: true
+              turns:
+                type: integer
+                nullable: true
+              outputDocument:
+                type: string
+              outputPreview:
+                type: string
+                nullable: true
+        documents:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              source:
+                type: string
+              stage:
+                type: integer
+
+    WorkflowOutput:
+      type: object
+      properties:
+        workflowId:
+          type: string
+        status:
+          type: string
+        deliverables:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              content:
+                type: string
+              producedBy:
+                type: string
+        summary:
+          type: object
+          properties:
+            totalStages:
+              type: integer
+            totalDocuments:
+              type: integer
+            contributors:
+              type: array
+              items:
+                type: string
+
+    CreateWorkflowRequest:
+      type: object
+      required:
+        - name
+        - stages
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        stages:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              scenarioTemplate:
+                type: string
+              type:
+                type: string
+                enum: [collaborative, solo, review]
+              agentCount:
+                type: integer
+              inputMapping:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    sourceStage:
+                      type: integer
+                    sourceDocument:
+                      type: string
+                    targetDocument:
+                      type: string
+                    targetType:
+                      type: string
+                      enum: [input, working]
+              outputDocument:
+                type: string
+
+    WorkflowTemplateSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        stages:
+          type: integer
+        inputCount:
+          type: integer
+
+    WorkflowTemplate:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        version:
+          type: integer
+        inputs:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              required:
+                type: boolean
+        stages:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              agentCount:
+                type: integer
+              output:
+                type: string
+        output:
+          type: object
+          properties:
+            primary:
+              type: string
+            include:
+              type: array
+              items:
+                type: string
+
+    # ============================================
+    # Goal Schemas
+    # ============================================
+
+    Goal:
+      type: object
+      properties:
+        id:
+          type: string
+        goal:
+          type: string
+        goalType:
+          type: string
+          enum: [creative_writing, decision_making, problem_solving, document_creation, review_feedback]
+        status:
+          type: string
+          enum: [planning, ready, active, completed, failed]
+        plan:
+          $ref: '#/components/schemas/WorkPlan'
+        currentTaskId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateGoalRequest:
+      type: object
+      required:
+        - goal
+        - goalType
+      properties:
+        goal:
+          type: string
+          description: High-level objective
+        goalType:
+          type: string
+          enum: [creative_writing, decision_making, problem_solving, document_creation, review_feedback]
+        outputRequirements:
+          type: object
+          properties:
+            format:
+              type: string
+            template:
+              type: string
+              nullable: true
+            requirements:
+              type: array
+              items:
+                type: string
+            constraints:
+              type: array
+              items:
+                type: string
+        resources:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+                enum: [reference, template, example, constraint]
+              content:
+                type: string
+
+    WorkPlan:
+      type: object
+      properties:
+        approach:
+          type: string
+          description: AI-generated explanation of approach
+        phases:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+                enum: [collaborative, solo, review]
+              purpose:
+                type: string
+              expectedOutput:
+                type: string
+              participantCount:
+                type: integer
+        estimatedTasks:
+          type: integer
+
+    GoalOutput:
+      type: object
+      properties:
+        goalId:
+          type: string
+        goal:
+          type: string
+        status:
+          type: string
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deliverables:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              content:
+                type: string
+              producedBy:
+                type: string
+              version:
+                type: integer
+
+tags:
+  - name: Cases
+    description: Case management
+  - name: Agent Actions
+    description: Agent task and response endpoints
+  - name: Documents
+    description: Document management (input and working)
+  - name: Scenarios
+    description: Pre-made scenario library
+  - name: Simulation
+    description: Automated case simulation
+  - name: Agents
+    description: Agent template management
+  - name: Companies
+    description: Company/organization management
+  - name: Buildings
+    description: Company building management
+  - name: Rooms
+    description: Room management within buildings
+  - name: Policies
+    description: HR policy management
+  - name: Employees
+    description: Employee management
+  - name: Workflows
+    description: Multi-stage workflow orchestration and templates
+  - name: Goals
+    description: Goal-driven dynamic workflows
+  - name: Admin
+    description: Administrative endpoints

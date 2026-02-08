@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Blobform</title>
+  <style>
+    body { margin: 0; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }
+    canvas { border-radius: 8px; }
+    #ui { position: absolute; top: 20px; left: 20px; color: white; }
+    #shape { font-size: 24px; }
+  </style>
+</head>
+<body>
+  <div id="ui"><div id="shape">Shape: Round</div><div>WASD to move | Click objects to absorb</div></div>
+  <canvas id="game" width="800" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    // Blob state
+    const blob = {
+      x: 400, y: 300,
+      vx: 0, vy: 0,
+      radius: 30,
+      points: [],
+      shape: "round", // round, spiky, flat
+      colors: { round: "#4ecdc4", spiky: "#ff6b6b", flat: "#ffe66d" }
+    };
+
+    // Generate blob points
+    function initBlob() {
+      blob.points = [];
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        blob.points.push({ angle, dist: blob.radius, phase: Math.random() * Math.PI * 2 });
+      }
+    }
+
+    // Objects to absorb
+    const objects = [
+      { x: 200, y: 200, type: "spiky", radius: 15 },
+      { x: 600, y: 200, type: "round", radius: 15 },
+      { x: 400, y: 450, type: "flat", radius: 15 },
+      { x: 150, y: 400, type: "spiky", radius: 15 },
+      { x: 650, y: 400, type: "round", radius: 15 },
+    ];
+
+    // Platforms
+    const platforms = [
+      { x: 100, y: 500, w: 150, h: 20 },
+      { x: 550, y: 500, w: 150, h: 20 },
+      { x: 300, y: 380, w: 200, h: 20 },
+      { x: 50, y: 280, w: 20, h: 150, wall: true },
+      { x: 730, y: 280, w: 20, h: 150, wall: true },
+    ];
+
+    // Physics based on shape
+    const physics = {
+      round: { friction: 0.98, bounce: 0.8, gravity: 0.3, grip: 0 },
+      spiky: { friction: 0.85, bounce: 0.2, gravity: 0.4, grip: 1 },
+      flat: { friction: 0.99, bounce: 0.3, gravity: 0.15, grip: 0 }
+    };
+
+    // Input
+    const keys = {};
+    document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+    document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+    canvas.addEventListener("click", e => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      objects.forEach((obj, i) => {
+        const dx = mx - obj.x;
+        const dy = my - obj.y;
+        if (Math.sqrt(dx*dx + dy*dy) < obj.radius + blob.radius) {
+          blob.shape = obj.type;
+          objects.splice(i, 1);
+          document.getElementById("shape").textContent = "Shape: " + blob.shape.charAt(0).toUpperCase() + blob.shape.slice(1);
+        }
+      });
+    });
+
+    function update() {
+      const p = physics[blob.shape];
+
+      // Movement
+      if (keys["a"] || keys["arrowleft"]) blob.vx -= 0.5;
+      if (keys["d"] || keys["arrowright"]) blob.vx += 0.5;
+      if (keys["w"] || keys["arrowup"]) blob.vy -= (blob.shape === "flat" ? 0.8 : 0.5);
+      if (keys["s"] || keys["arrowdown"]) blob.vy += 0.3;
+
+      // Physics
+      blob.vy += p.gravity;
+      blob.vx *= p.friction;
+      blob.vy *= p.friction;
+      blob.x += blob.vx;
+      blob.y += blob.vy;
+
+      // Platform collision
+      platforms.forEach(plat => {
+        if (blob.x > plat.x && blob.x < plat.x + plat.w &&
+            blob.y + blob.radius > plat.y && blob.y - blob.radius < plat.y + plat.h) {
+          if (plat.wall) {
+            if (blob.shape === "spiky") {
+              blob.vx = 0; // Grip wall
+              blob.vy *= 0.9;
+            } else {
+              blob.vx *= -p.bounce;
+              blob.x += blob.vx * 2;
+            }
+          } else {
+            blob.vy *= -p.bounce;
+            blob.y = plat.y - blob.radius;
+          }
+        }
+      });
+
+      // Bounds
+      if (blob.x < blob.radius) { blob.x = blob.radius; blob.vx *= -p.bounce; }
+      if (blob.x > 800 - blob.radius) { blob.x = 800 - blob.radius; blob.vx *= -p.bounce; }
+      if (blob.y < blob.radius) { blob.y = blob.radius; blob.vy *= -p.bounce; }
+      if (blob.y > 600 - blob.radius) { blob.y = 600 - blob.radius; blob.vy *= -p.bounce; }
+
+      // Wobble blob points
+      blob.points.forEach(pt => {
+        pt.phase += 0.1;
+        const wobble = blob.shape === "round" ? 5 : (blob.shape === "spiky" ? 8 : 3);
+        pt.dist = blob.radius + Math.sin(pt.phase) * wobble;
+      });
+    }
+
+    function draw() {
+      ctx.fillStyle = "#16213e";
+      ctx.fillRect(0, 0, 800, 600);
+
+      // Platforms
+      ctx.fillStyle = "#0f3460";
+      platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+      // Objects
+      objects.forEach(obj => {
+        ctx.fillStyle = blob.colors[obj.type];
+        ctx.beginPath();
+        if (obj.type === "spiky") {
+          for (let i = 0; i < 8; i++) {
+            const a = (i / 8) * Math.PI * 2;
+            const r = i % 2 === 0 ? obj.radius * 1.5 : obj.radius * 0.7;
+            const px = obj.x + Math.cos(a) * r;
+            const py = obj.y + Math.sin(a) * r;
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          }
+        } else if (obj.type === "flat") {
+          ctx.ellipse(obj.x, obj.y, obj.radius * 1.5, obj.radius * 0.6, 0, 0, Math.PI * 2);
+        } else {
+          ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+        }
+        ctx.closePath();
+        ctx.fill();
+      });
+
+      // Blob
+      ctx.fillStyle = blob.colors[blob.shape];
+      ctx.beginPath();
+      blob.points.forEach((pt, i) => {
+        let r = pt.dist;
+        if (blob.shape === "spiky") r = i % 2 === 0 ? r * 1.3 : r * 0.7;
+        if (blob.shape === "flat") r = pt.angle > Math.PI * 0.25 && pt.angle < Math.PI * 0.75 || pt.angle > Math.PI * 1.25 && pt.angle < Math.PI * 1.75 ? r * 0.5 : r * 1.3;
+        const px = blob.x + Math.cos(pt.angle) * r;
+        const py = blob.y + Math.sin(pt.angle) * r;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(blob.x - 8, blob.y - 5, 6, 0, Math.PI * 2);
+      ctx.arc(blob.x + 8, blob.y - 5, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#1a1a2e";
+      ctx.beginPath();
+      ctx.arc(blob.x - 6, blob.y - 5, 3, 0, Math.PI * 2);
+      ctx.arc(blob.x + 10, blob.y - 5, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    initBlob();
+    gameLoop();
+  </script>
+</body>
+</html>

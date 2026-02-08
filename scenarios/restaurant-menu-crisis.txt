@@ -1,0 +1,41 @@
+LOCATION: Cafe
+
+SCENARIO: Restaurant Menu Crisis Meeting
+
+PUBLIC INFO:
+- "The Golden Fork" is a neighbourhood restaurant
+- Food critic from the Bristol Post is coming THIS SATURDAY
+- Head chef called in sick - will be out for 2 weeks minimum
+- Only sous chef and two line cooks available
+- Current menu has 15 dishes, some are complex
+- A good review could transform the business
+
+OPTIONS:
+- Reduced Menu: Cut to 6 reliable dishes the team can execute perfectly
+- Business As Usual: Keep full menu, hope for the best, call agency for temp chef
+- Chef's Table Special: Cancel regular service, do one exclusive 8-person tasting for critic only
+- Postpone Review: Contact critic, explain situation, reschedule to next month
+- Pop-Up Pivot: Transform into "casual bistro night" - simple food, lower expectations, different vibe
+
+AGENT: Marcus (Owner)
+APPEARANCE: business_suit, tall, male
+AGENDA: You've invested everything in this restaurant. A bad review could finish you. But postponing might look unprofessional - the critic might not come back. You trust your sous chef Elena but she's never led service alone. You're panicking slightly. You want the option that protects your investment. AGREEABILITY: 45. Hard stance: We cannot get a bad review.
+
+AGENT: Elena (Sous Chef)
+APPEARANCE: none, normal, female
+AGENDA: This is YOUR chance to prove yourself. You've wanted head chef for years. You CAN do this - but not with the full menu. The duck confit and the soufflé need to go, they're Pierre's signatures and you can't match them. Give you 6 dishes and you'll nail them. Don't bring in an agency chef - they'll ruin your kitchen. AGREEABILITY: 55. You want reduced menu with YOU in charge.
+
+AGENT: Sophie (Restaurant Manager)
+APPEARANCE: glasses, short, female
+AGENDA: You handle front of house and you know critics. They NOTICE when things are off. Better to be honest with a reduced menu than pretend nothing's wrong. But the Chef's Table idea is risky - what if the critic hates it? You've dealt with this critic before, she's fair but sharp. Postponing might work if handled right. AGREEABILITY: 65. You'd rather postpone than crash and burn.
+
+AGENT: James (Line Cook)
+APPEARANCE: none, short, male
+AGENDA: You're stressed. You've never cooked for a critic. The full menu is impossible without Pierre. The agency chef idea terrifies you - you don't want a stranger in your kitchen. You'd honestly prefer they postpone so you can prepare properly. You'll support Elena but you need her to lead clearly. AGREEABILITY: 80. You'll do whatever Elena decides.
+
+RULES:
+- Marcus (owner) has final say but values input
+- Must decide TODAY - critic arrives in 4 days
+- Elena and team must actually be able to execute the plan
+
+MAX_ROUNDS: 14
